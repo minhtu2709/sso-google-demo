@@ -1,9 +1,12 @@
 package com.example.demo.controller;
 
-import com.example.demo.entity.User;
-import com.example.demo.repository.UserRepository;
+import com.example.demo.dto.RegisterRequest;
+import com.example.demo.dto.UserResponse;
+import com.example.demo.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -11,21 +14,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
 
     @PostMapping("/register")
-    public String register(@RequestBody User user) {
+    public ResponseEntity<UserResponse> register(
+            @Valid @RequestBody RegisterRequest request) {
 
-        // Encode password
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        // Set provider
-        user.setProvider("LOCAL");
-
-        userRepository.save(user);
-
-        return "Register success";
+        UserResponse response = userService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
 }
