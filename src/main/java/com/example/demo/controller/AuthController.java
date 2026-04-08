@@ -30,7 +30,7 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Đăng ký thành công", response));
-    }
+     }
 
     // POST /auth/login
     @PostMapping("/login")
