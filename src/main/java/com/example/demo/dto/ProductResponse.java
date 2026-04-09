@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -18,6 +19,8 @@ public class ProductResponse {
     private String imageUrl;
     private String status;
     private CategoryResponse category;
+    private LocalDateTime createdAt;  // thêm vào
+    private LocalDateTime updatedAt;  // thêm vào
 
     public static ProductResponse from(Product product) {
         return ProductResponse.builder()
@@ -29,6 +32,8 @@ public class ProductResponse {
                 .imageUrl(product.getImageUrl())
                 .status(product.getStatus())
                 .category(CategoryResponse.from(product.getCategory()))
+                .createdAt(product.getCreatedAt())  // thêm vào
+                .updatedAt(product.getUpdatedAt())  // thêm vào
                 .build();
     }
 }
