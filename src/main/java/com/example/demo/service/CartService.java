@@ -25,94 +25,82 @@ public class CartService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
 
-    // Lấy giỏ hàng của user
-    // Nếu chưa có thì tự tạo mới — không bắt user phải "tạo giỏ hàng" thủ công
     @Transactional
     public CartResponse getCart(Long userId) {
         Cart cart = getOrCreateCart(userId);
         return CartResponse.from(cart);
     }
 
-    // Thêm sản phẩm vào giỏ
     @Transactional
     public CartResponse addItem(Long userId, CartItemRequest request) {
 
         Cart cart = getOrCreateCart(userId);
 
-        // Kiểm tra sản phẩm có tồn tại không
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
 
-        // Kiểm tra còn hàng không
         if (product.getStock() < request.getQuantity()) {
             throw new IllegalArgumentException("Sản phẩm không đủ số lượng trong kho");
         }
 
-        // Tìm xem sản phẩm đã có trong giỏ chưa
-        // Nếu có rồi → tăng số lượng, không tạo dòng mới
-        // Nếu chưa → tạo CartItem mới
         cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId())
                 .ifPresentOrElse(
                         existingItem -> {
-                            // Sản phẩm đã có trong giỏ → cộng thêm số lượng
+                            // Đã có trong giỏ → tăng số lượng
                             existingItem.setQuantity(existingItem.getQuantity() + request.getQuantity());
                             cartItemRepository.save(existingItem);
                             log.info("Cập nhật số lượng sản phẩm {} trong giỏ", product.getName());
                         },
                         () -> {
-                            // Sản phẩm chưa có trong giỏ → tạo mới
+                            // Chưa có → tạo mới và thêm vào list của cart
                             CartItem newItem = new CartItem();
                             newItem.setCart(cart);
                             newItem.setProduct(product);
                             newItem.setQuantity(request.getQuantity());
-                            cartItemRepository.save(newItem);
+                            cart.getItems().add(newItem); // thêm vào list cart trước
                             log.info("Thêm sản phẩm {} vào giỏ", product.getName());
                         }
                 );
 
-        // Trả về giỏ hàng mới nhất sau khi thêm
-        Cart updatedCart = cartRepository.findById(cart.getId()).get();
-        return CartResponse.from(updatedCart);
+        // Lưu cart — cascade ALL sẽ tự lưu CartItem bên trong
+        Cart savedCart = cartRepository.save(cart);
+        return CartResponse.from(savedCart);
     }
 
-    // Xóa 1 sản phẩm khỏi giỏ
     @Transactional
     public CartResponse removeItem(Long userId, Long cartItemId) {
 
         Cart cart = getOrCreateCart(userId);
 
-        // Tìm CartItem cần xóa
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm trong giỏ"));
 
-        // Kiểm tra CartItem này có thuộc giỏ của user không
+        // Kiểm tra CartItem có thuộc giỏ của user không
         // Tránh user A xóa sản phẩm trong giỏ của user B!
         if (!item.getCart().getId().equals(cart.getId())) {
             throw new IllegalArgumentException("Bạn không có quyền xóa sản phẩm này");
         }
 
-        cartItemRepository.delete(item);
+        // Xóa khỏi list của cart — orphanRemoval tự xóa trong DB
+        cart.getItems().remove(item);
+        Cart savedCart = cartRepository.save(cart);
         log.info("Đã xóa sản phẩm khỏi giỏ hàng");
 
-        Cart updatedCart = cartRepository.findById(cart.getId()).get();
-        return CartResponse.from(updatedCart);
+        return CartResponse.from(savedCart);
     }
 
-    // Xóa toàn bộ giỏ hàng
     @Transactional
     public void clearCart(Long userId) {
         Cart cart = getOrCreateCart(userId);
-        cart.getItems().clear(); // orphanRemoval = true sẽ tự xóa trong DB
+        cart.getItems().clear();
         cartRepository.save(cart);
         log.info("Đã xóa toàn bộ giỏ hàng của user {}", userId);
     }
 
-    // Helper method — tìm hoặc tạo giỏ hàng
-    // Dùng private vì chỉ dùng nội bộ trong Service này
+    // Tìm giỏ hàng của user, nếu chưa có thì tạo mới
     private Cart getOrCreateCart(Long userId) {
         return cartRepository.findByUserId(userId)
                 .orElseGet(() -> {
-                    // Chưa có giỏ → tạo mới
                     User user = userRepository.findById(userId)
                             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
 
