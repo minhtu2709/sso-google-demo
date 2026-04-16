@@ -12,6 +12,7 @@ public class UserResponse {
     private String email;
     private String name;
     private String provider;
+    private String role;
 
 
     public static UserResponse from(User user) {
@@ -20,6 +21,7 @@ public class UserResponse {
                 .email(user.getEmail())
                 .name(user.getName())
                 .provider(user.getProvider())
+                .role(user.getRole().name())
                 .build();
     }
 }

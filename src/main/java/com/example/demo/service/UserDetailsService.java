@@ -3,7 +3,8 @@ package com.example.demo.service;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.*;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,13 +19,13 @@ public class UserDetailsService implements org.springframework.security.core.use
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
-        // User Google có password = null → cần xử lý tránh crash
         String password = user.getPassword() != null ? user.getPassword() : "";
+        User.Role role = user.getRole() != null ? user.getRole() : User.Role.USER;
 
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(password)
-                .roles("USER")
+                .roles(role.name())
                 .build();
     }
 }

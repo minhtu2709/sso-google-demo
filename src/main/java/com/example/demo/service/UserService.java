@@ -31,6 +31,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setName(request.getName());
         user.setProvider("LOCAL");
+        user.setRole(User.Role.USER);
 
         User saved = userRepository.save(user);
         log.info("Đăng ký thành công: {}", saved.getEmail());
@@ -44,12 +45,10 @@ public class UserService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("Email hoặc mật khẩu không đúng"));
 
-        // Kiểm tra có phải tài khoản Google không
         if (!"LOCAL".equals(user.getProvider())) {
             throw new IllegalArgumentException("Tài khoản này đăng nhập bằng Google, vui lòng dùng SSO");
         }
 
-        // Kiểm tra password
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");
         }
@@ -64,5 +63,17 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
 
         return UserResponse.from(user);
+    }
+
+    @Transactional
+    public UserResponse updateUserRole(Long userId, User.Role role) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
+
+        user.setRole(role);
+
+        User saved = userRepository.save(user);
+        return UserResponse.from(saved);
     }
 }

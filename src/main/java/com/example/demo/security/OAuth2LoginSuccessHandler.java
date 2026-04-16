@@ -26,18 +26,17 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
         String email = oAuth2User.getAttribute("email");
-        String name  = oAuth2User.getAttribute("name");
+        String name = oAuth2User.getAttribute("name");
 
-        // Tìm hoặc tạo mới user
         userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setName(name);
             newUser.setProvider("GOOGLE");
+            newUser.setRole(User.Role.USER);
             return userRepository.save(newUser);
         });
 
-        // Redirect về frontend sau khi login thành công
         response.sendRedirect("/auth/me");
     }
 }
