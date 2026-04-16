@@ -9,6 +9,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -23,10 +25,18 @@ public class SecurityConfig {
     }
 
     @Bean
+    public SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
+                .securityContext(securityContext -> securityContext
+                        .securityContextRepository(securityContextRepository())
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/auth/register",
@@ -35,8 +45,16 @@ public class SecurityConfig {
                                 "/login/**",
                                 "/oauth2/**"
                         ).permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/products/**", "/categories/**").permitAll()
-                        .requestMatchers("/cart/**", "/orders/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/products/*/reviews").authenticated()
+
+                        .requestMatchers(HttpMethod.POST, "/products/**", "/categories/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/products/**", "/categories/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/products/**", "/categories/**").hasRole("ADMIN")
+
+                        .requestMatchers("/cart/**", "/orders/**", "/auth/me").authenticated()
+
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -46,12 +64,12 @@ public class SecurityConfig {
                         .successHandler((request, response, authentication) -> {
                             response.setContentType("application/json;charset=UTF-8");
                             response.setStatus(200);
-                            response.getWriter().write("{\"success\":true,\"message\":\"Đăng nhập thành công\"}");
+                            response.getWriter().write("{\"success\":true,\"message\":\"Dang nhap thanh cong\"}");
                         })
                         .failureHandler((request, response, exception) -> {
                             response.setContentType("application/json;charset=UTF-8");
                             response.setStatus(401);
-                            response.getWriter().write("{\"success\":false,\"message\":\"Sai email hoặc mật khẩu\"}");
+                            response.getWriter().write("{\"success\":false,\"message\":\"Sai email hoac mat khau\"}");
                         })
                         .permitAll()
                 )

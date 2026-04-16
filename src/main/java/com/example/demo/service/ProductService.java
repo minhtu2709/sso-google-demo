@@ -1,17 +1,30 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.PageMetadata;
+import com.example.demo.dto.PageResult;
 import com.example.demo.dto.ProductRequest;
 import com.example.demo.dto.ProductResponse;
 import com.example.demo.entity.Category;
 import com.example.demo.entity.Product;
 import com.example.demo.repository.CategoryRepository;
 import com.example.demo.repository.ProductRepository;
+import com.example.demo.repository.ReviewRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -20,74 +33,14 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ReviewRepository reviewRepository;
 
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
-
-        // Tìm category theo id — nếu không có thì báo lỗi ngay
-        // Tại sao phải tìm? Vì Product cần biết nó thuộc Category nào
-        // không thể chỉ lưu mỗi categoryId số, JPA cần object Category thật
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục"));
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay danh muc"));
 
-        // Tạo object Product rồi gán từng field vào
-        // Giống như điền form vậy — request là tờ giấy client gửi lên
-        // product là bản ghi mình chuẩn bị lưu vào DB
         Product product = new Product();
-        product.setName(request.getName());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-        product.setStock(request.getStock());
-        product.setImageUrl(request.getImageUrl());
-        product.setStatus(request.getStatus());
-        product.setCategory(category); // gán object Category, không phải id
-
-        // Lưu vào DB — JPA sẽ tự sinh ra câu INSERT
-        // Dùng "saved" chứ không dùng "product" vì sau save()
-        // JPA mới gán id tự động vào — nếu dùng product thì id = null!
-        Product saved = productRepository.save(product);
-        log.info("Tạo sản phẩm thành công: {}", saved.getName());
-
-        // Chuyển Entity → DTO rồi trả về
-        // Không trả Product thẳng vì Entity có thể lộ thông tin không cần thiết
-        return ProductResponse.from(saved);
-    }
-
-    @Transactional(readOnly = true)
-    public List<ProductResponse> getAllProducts() {
-
-        // findAll() → lấy tất cả Product từ DB (dạng List<Product>)
-        // .stream() → mở "băng chuyền" xử lý từng phần tử
-        // .map(ProductResponse::from) → mỗi Product đi qua băng chuyền
-        //                               được convert thành ProductResponse
-        // .toList() → gom lại thành List mới
-        return productRepository.findAll().stream()
-                .map(ProductResponse::from)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public ProductResponse getProductById(Long id) {
-
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
-
-        return ProductResponse.from(product);
-    }
-
-    @Transactional
-    public ProductResponse updateProduct(Long id, ProductRequest request) {
-
-        // Tìm sản phẩm cần sửa — phải tồn tại mới sửa được
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
-
-        // Tìm category mới nếu client muốn đổi danh mục
-        Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục"));
-
-        // Gán lại toàn bộ thông tin mới vào object cũ
-        // JPA tự hiểu đây là UPDATE vì object đã có id rồi
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
@@ -97,7 +50,74 @@ public class ProductService {
         product.setCategory(category);
 
         Product saved = productRepository.save(product);
-        log.info("Cập nhật sản phẩm thành công: {}", saved.getName());
+        log.info("Tao san pham thanh cong: {}", saved.getName());
+
+        return ProductResponse.from(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResult<ProductResponse> getProducts(
+            String keyword,
+            Long categoryId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            String status,
+            int page,
+            int size,
+            String sortBy,
+            String sortDir
+    ) {
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir)
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Specification<Product> specification = buildProductSpecification(
+                keyword, categoryId, minPrice, maxPrice, status
+        );
+
+        Page<Product> productPage = productRepository.findAll(specification, pageable);
+        Map<Long, Object[]> reviewSummaryMap = getReviewSummaryMap(
+                productPage.getContent().stream().map(Product::getId).toList()
+        );
+
+        List<ProductResponse> items = productPage.getContent().stream()
+                .map(product -> toProductResponse(product, reviewSummaryMap.get(product.getId())))
+                .toList();
+
+        return PageResult.<ProductResponse>builder()
+                .items(items)
+                .metadata(PageMetadata.from(productPage))
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public ProductResponse getProductById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay san pham"));
+
+        Object[] reviewSummary = getReviewSummaryMap(List.of(product.getId())).get(product.getId());
+        return toProductResponse(product, reviewSummary);
+    }
+
+    @Transactional
+    public ProductResponse updateProduct(Long id, ProductRequest request) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay san pham"));
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay danh muc"));
+
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setStock(request.getStock());
+        product.setImageUrl(request.getImageUrl());
+        product.setStatus(request.getStatus());
+        product.setCategory(category);
+
+        Product saved = productRepository.save(product);
+        log.info("Cap nhat san pham thanh cong: {}", saved.getName());
 
         return ProductResponse.from(saved);
     }
@@ -105,17 +125,87 @@ public class ProductService {
     @Transactional
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay san pham"));
 
         productRepository.delete(product);
-        log.info("Đã xóa sản phẩm ID: {}", id);
+        log.info("Da xoa san pham ID: {}", id);
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> searchProducts(String keyword) {
+    public PageResult<ProductResponse> searchProducts(
+            String keyword,
+            int page,
+            int size,
+            String sortBy,
+            String sortDir
+    ) {
+        return getProducts(keyword, null, null, null, null, page, size, sortBy, sortDir);
+    }
 
-        return productRepository.findByNameContainingIgnoreCase(keyword).stream()
-                .map(ProductResponse::from)
-                .toList();
+    private Specification<Product> buildProductSpecification(
+            String keyword,
+            Long categoryId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            String status
+    ) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (keyword != null && !keyword.isBlank()) {
+                String normalizedKeyword = "%" + keyword.trim().toLowerCase() + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), normalizedKeyword),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), normalizedKeyword)
+                ));
+            }
+
+            if (categoryId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("category").get("id"), categoryId));
+            }
+
+            if (minPrice != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("price"), minPrice));
+            }
+
+            if (maxPrice != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("price"), maxPrice));
+            }
+
+            if (status != null && !status.isBlank()) {
+                predicates.add(criteriaBuilder.equal(
+                        criteriaBuilder.lower(root.get("status")),
+                        status.trim().toLowerCase()
+                ));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private Map<Long, Object[]> getReviewSummaryMap(List<Long> productIds) {
+        Map<Long, Object[]> summaryMap = new HashMap<>();
+
+        if (productIds.isEmpty()) {
+            return summaryMap;
+        }
+
+        for (Object[] row : reviewRepository.summarizeByProductIds(productIds)) {
+            summaryMap.put((Long) row[0], row);
+        }
+
+        return summaryMap;
+    }
+
+    private ProductResponse toProductResponse(Product product, Object[] reviewSummary) {
+        double averageRating = 0.0;
+        long reviewCount = 0L;
+
+        if (reviewSummary != null) {
+            averageRating = ((Number) reviewSummary[1]).doubleValue();
+            reviewCount = ((Number) reviewSummary[2]).longValue();
+        }
+
+        return ProductResponse.from(product, averageRating, reviewCount);
     }
 }

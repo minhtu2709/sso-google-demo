@@ -2,9 +2,7 @@ package com.example.demo.repository;
 
 import com.example.demo.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.List;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface ProductRepository extends JpaRepository<Product, Long> {
-    List<Product> findByNameContainingIgnoreCase(String keyword);
+public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
 }
-

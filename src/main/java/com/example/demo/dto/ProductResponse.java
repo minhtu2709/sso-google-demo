@@ -19,10 +19,16 @@ public class ProductResponse {
     private String imageUrl;
     private String status;
     private CategoryResponse category;
-    private LocalDateTime createdAt;  // thêm vào
-    private LocalDateTime updatedAt;  // thêm vào
+    private Double averageRating;
+    private Long reviewCount;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static ProductResponse from(Product product) {
+        return from(product, 0.0, 0L);
+    }
+
+    public static ProductResponse from(Product product, Double averageRating, Long reviewCount) {
         return ProductResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
@@ -32,8 +38,10 @@ public class ProductResponse {
                 .imageUrl(product.getImageUrl())
                 .status(product.getStatus())
                 .category(CategoryResponse.from(product.getCategory()))
-                .createdAt(product.getCreatedAt())  // thêm vào
-                .updatedAt(product.getUpdatedAt())  // thêm vào
+                .averageRating(averageRating)
+                .reviewCount(reviewCount)
+                .createdAt(product.getCreatedAt())
+                .updatedAt(product.getUpdatedAt())
                 .build();
     }
 }

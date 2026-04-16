@@ -5,14 +5,24 @@ import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.RegisterRequest;
 import com.example.demo.dto.UserResponse;
 import com.example.demo.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/auth")
@@ -20,8 +30,8 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final UserService userService;
+    private final SecurityContextRepository securityContextRepository;
 
-    // POST /auth/register
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserResponse>> register(
             @Valid @RequestBody RegisterRequest request) {
@@ -29,44 +39,48 @@ public class AuthController {
         UserResponse response = userService.register(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Đăng ký thành công", response));
-     }
-
-    // POST /auth/login
-    @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UserResponse>> login(
-            @Valid @RequestBody LoginRequest request) {
-
-        UserResponse response = userService.login(request);
-        return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", response));
+                .body(ApiResponse.success("Dang ky thanh cong", response));
     }
 
-    // GET /auth/me — lấy thông tin user đang đăng nhập
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<UserResponse>> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+
+        UserResponse response = userService.login(request);
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        response.getEmail(),
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + response.getRole()))
+                );
+
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+
+        securityContextRepository.saveContext(context, httpRequest, httpResponse);
+
+        HttpSession session = httpRequest.getSession(true);
+        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+
+        return ResponseEntity.ok(ApiResponse.success("Dang nhap thanh cong", response));
+    }
+
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(
-            @AuthenticationPrincipal Object principal) {
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(Authentication authentication) {
 
-        if (principal == null) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Chưa đăng nhập"));
+                    .body(ApiResponse.error("Chua dang nhap"));
         }
 
-        String email;
-
-        if (principal instanceof OAuth2User oAuth2User) {
-            // Đăng nhập bằng Google
-            email = oAuth2User.getAttribute("email");
-        } else if (principal instanceof UserDetails userDetails) {
-            // Đăng nhập bằng email/password
-            email = userDetails.getUsername();
-        } else {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Không xác định được người dùng"));
-        }
-
-        UserResponse response = userService.getUserByEmail(email);
-        return ResponseEntity.ok(ApiResponse.success("Thành công", response));
+        UserResponse response = userService.getUserByEmail(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Thanh cong", response));
     }
 }

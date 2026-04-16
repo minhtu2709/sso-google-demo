@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.ApiResponse;
+import com.example.demo.dto.PageResult;
 import com.example.demo.dto.ProductRequest;
 import com.example.demo.dto.ProductResponse;
 import com.example.demo.service.ProductService;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -26,58 +28,65 @@ public class ProductController {
         ProductResponse response = productService.createProduct(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Tạo sản phẩm thành công", response));
+                .body(ApiResponse.success("Tao san pham thanh cong", response));
     }
 
-    // GET /products — lấy tất cả sản phẩm
-    // List<ProductResponse> vì trả về nhiều sản phẩm
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ProductResponse>>> getAllProducts() {
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getAllProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
-        List<ProductResponse> response = productService.getAllProducts();
-        return ResponseEntity.ok(ApiResponse.success("Thành công", response));
+        PageResult<ProductResponse> response = productService.getProducts(
+                keyword, categoryId, minPrice, maxPrice, status, page, size, sortBy, sortDir
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Thanh cong", response.getItems(), response.getMetadata())
+        );
     }
 
-    // GET /products/5 — lấy 1 sản phẩm theo id
-    // @PathVariable lấy số 5 từ URL gắn vào biến "id"
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductResponse>> getProductById(
-            @PathVariable Long id) {
-
+    public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long id) {
         ProductResponse response = productService.getProductById(id);
-        return ResponseEntity.ok(ApiResponse.success("Thành công", response));
+        return ResponseEntity.ok(ApiResponse.success("Thanh cong", response));
     }
 
-    // PUT /products/5 — cập nhật sản phẩm id=5
-    // PUT = thay thế toàn bộ, khác PATCH = chỉ sửa 1 phần
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
             @PathVariable Long id,
             @Valid @RequestBody ProductRequest request) {
 
         ProductResponse response = productService.updateProduct(id, request);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật thành công", response));
+        return ResponseEntity.ok(ApiResponse.success("Cap nhat thanh cong", response));
     }
 
-    // DELETE /products/5 — xóa sản phẩm id=5
-    // Void vì xóa xong không có data để trả, chỉ có message
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteProduct(
-            @PathVariable Long id) {
-
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
-        return ResponseEntity.ok(ApiResponse.success("Xóa sản phẩm thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Xoa san pham thanh cong"));
     }
 
-    // GET /products/search?keyword=áo — tìm kiếm theo tên
-    // @RequestParam lấy giá trị từ query string trên URL
-    // Khác @PathVariable: PathVariable lấy từ /products/{id}
-    //                      RequestParam lấy từ /products/search?keyword=...
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> searchProducts(
-            @RequestParam String keyword) {
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
 
-        List<ProductResponse> response = productService.searchProducts(keyword);
-        return ResponseEntity.ok(ApiResponse.success("Thành công", response));
+        PageResult<ProductResponse> response = productService.searchProducts(
+                keyword, page, size, sortBy, sortDir
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Thanh cong", response.getItems(), response.getMetadata())
+        );
     }
 }
