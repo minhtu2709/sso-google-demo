@@ -28,7 +28,7 @@ public class ProductController {
         ProductResponse response = productService.createProduct(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Tao san pham thanh cong", response));
+                .body(ApiResponse.success("Tạo sản phẩm thành công", response));
     }
 
     @GetMapping
@@ -48,14 +48,14 @@ public class ProductController {
         );
 
         return ResponseEntity.ok(
-                ApiResponse.success("Thanh cong", response.getItems(), response.getMetadata())
+                ApiResponse.success("Thành công", response.getItems(), response.getMetadata())
         );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long id) {
         ProductResponse response = productService.getProductById(id);
-        return ResponseEntity.ok(ApiResponse.success("Thanh cong", response));
+        return ResponseEntity.ok(ApiResponse.success("Thành công", response));
     }
 
     @PutMapping("/{id}")
@@ -64,13 +64,13 @@ public class ProductController {
             @Valid @RequestBody ProductRequest request) {
 
         ProductResponse response = productService.updateProduct(id, request);
-        return ResponseEntity.ok(ApiResponse.success("Cap nhat thanh cong", response));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thành công", response));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
-        return ResponseEntity.ok(ApiResponse.success("Xoa san pham thanh cong"));
+        return ResponseEntity.ok(ApiResponse.success("Xóa sản phẩm thành công"));
     }
 
     @GetMapping("/search")
@@ -86,7 +86,7 @@ public class ProductController {
         );
 
         return ResponseEntity.ok(
-                ApiResponse.success("Thanh cong", response.getItems(), response.getMetadata())
+                ApiResponse.success("Thành công", response.getItems(), response.getMetadata())
         );
     }
 }

@@ -38,7 +38,7 @@ public class ProductService {
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay danh muc"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục"));
 
         Product product = new Product();
         product.setName(request.getName());
@@ -50,7 +50,7 @@ public class ProductService {
         product.setCategory(category);
 
         Product saved = productRepository.save(product);
-        log.info("Tao san pham thanh cong: {}", saved.getName());
+        log.info("Tạo sản phẩm thành công: {}", saved.getName());
 
         return ProductResponse.from(saved);
     }
@@ -94,7 +94,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay san pham"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
 
         Object[] reviewSummary = getReviewSummaryMap(List.of(product.getId())).get(product.getId());
         return toProductResponse(product, reviewSummary);
@@ -103,10 +103,10 @@ public class ProductService {
     @Transactional
     public ProductResponse updateProduct(Long id, ProductRequest request) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay san pham"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
 
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay danh muc"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục"));
 
         product.setName(request.getName());
         product.setDescription(request.getDescription());
@@ -117,7 +117,7 @@ public class ProductService {
         product.setCategory(category);
 
         Product saved = productRepository.save(product);
-        log.info("Cap nhat san pham thanh cong: {}", saved.getName());
+        log.info("Cập nhật danh mục thành công: {}", saved.getName());
 
         return ProductResponse.from(saved);
     }
@@ -125,10 +125,10 @@ public class ProductService {
     @Transactional
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay san pham"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
 
         productRepository.delete(product);
-        log.info("Da xoa san pham ID: {}", id);
+        log.info("Đã xóa sản phẩm ID: {}", id);
     }
 
     @Transactional(readOnly = true)

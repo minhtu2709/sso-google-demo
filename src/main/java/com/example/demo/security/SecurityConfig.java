@@ -1,16 +1,17 @@
 package com.example.demo.security;
 
+import com.example.demo.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -18,6 +19,7 @@ import org.springframework.security.web.context.SecurityContextRepository;
 public class SecurityConfig {
 
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final JwtFilter jwtFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -25,25 +27,44 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityContextRepository securityContextRepository() {
-        return new HttpSessionSecurityContextRepository();
-    }
-
-    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
-                .securityContext(securityContext -> securityContext
-                        .securityContextRepository(securityContextRepository())
+
+                // Tắt session — JWT là stateless
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
+                // Trả JSON thay vì redirect HTML khi lỗi auth
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.setStatus(401);
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"Chưa đăng nhập\"}"
+                            );
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.setStatus(403);
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"Không có quyền truy cập\"}"
+                            );
+                        })
+                )
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/auth/register",
                                 "/auth/login",
                                 "/auth/login-form",
                                 "/login/**",
-                                "/oauth2/**"
+                                "/oauth2/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
                         ).permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/products/**", "/categories/**").permitAll()
@@ -53,10 +74,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/products/**", "/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/products/**", "/categories/**").hasRole("ADMIN")
 
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/cart/**", "/orders/**", "/auth/me").authenticated()
 
                         .anyRequest().authenticated()
                 )
+
+                // JwtFilter chạy trước filter xác thực mặc định
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // Giữ form login để test
                 .formLogin(form -> form
                         .loginProcessingUrl("/auth/login-form")
                         .usernameParameter("email")
@@ -64,12 +91,16 @@ public class SecurityConfig {
                         .successHandler((request, response, authentication) -> {
                             response.setContentType("application/json;charset=UTF-8");
                             response.setStatus(200);
-                            response.getWriter().write("{\"success\":true,\"message\":\"Dang nhap thanh cong\"}");
+                            response.getWriter().write(
+                                    "{\"success\":true,\"message\":\"Đăng nhập thành công\"}"
+                            );
                         })
                         .failureHandler((request, response, exception) -> {
                             response.setContentType("application/json;charset=UTF-8");
                             response.setStatus(401);
-                            response.getWriter().write("{\"success\":false,\"message\":\"Sai email hoac mat khau\"}");
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"Sai email hoặc mật khẩu\"}"
+                            );
                         })
                         .permitAll()
                 )

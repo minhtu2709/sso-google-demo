@@ -10,7 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,14 +27,14 @@ public class ReviewController {
     public ResponseEntity<ApiResponse<ReviewResponse>> createOrUpdateReview(
             @PathVariable Long productId,
             @Valid @RequestBody ReviewRequest request,
-            Authentication authentication) {
+            @AuthenticationPrincipal Object principal) {
 
-        Long userId = securityUtils.getCurrentUserId(authentication);
+        Long userId = securityUtils.getCurrentUserId(principal);
         ReviewResponse response = reviewService.upsertReview(productId, userId, request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Review thanh cong", response));
+                .body(ApiResponse.success("Review thành công", response));
     }
 
     @GetMapping
@@ -49,7 +49,7 @@ public class ReviewController {
         );
 
         return ResponseEntity.ok(
-                ApiResponse.success("Thanh cong", response.getItems(), response.getMetadata())
+                ApiResponse.success("Thành công", response.getItems(), response.getMetadata())
         );
     }
 }

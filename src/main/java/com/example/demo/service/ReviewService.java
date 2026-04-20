@@ -33,10 +33,10 @@ public class ReviewService {
     @Transactional
     public ReviewResponse upsertReview(Long productId, Long userId, ReviewRequest request) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay san pham"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay user"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
 
         Review review = reviewRepository.findByProductIdAndUserId(productId, userId)
                 .orElseGet(Review::new);
@@ -47,7 +47,7 @@ public class ReviewService {
         review.setComment(request.getComment());
 
         Review saved = reviewRepository.save(review);
-        log.info("Review da duoc luu cho productId={}, userId={}", productId, userId);
+        log.info("Review đã được lưu cho productId={}, userId={}", productId, userId);
 
         return ReviewResponse.from(saved);
     }
@@ -60,7 +60,7 @@ public class ReviewService {
             String sortDir) {
 
         if (!productRepository.existsById(productId)) {
-            throw new IllegalArgumentException("Khong tim thay san pham");
+            throw new IllegalArgumentException("Không tìm thấy sản phẩm");
         }
 
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDir)
