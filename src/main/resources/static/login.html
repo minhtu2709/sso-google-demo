@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 420px;
+            margin: 60px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        input, button, a {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            text-decoration: none;
+            background: #eeeeee;
+            color: black;
+            border: 1px solid #cccccc;
+        }
+
+        #status {
+            margin-top: 12px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<h1>Đăng nhập</h1>
+
+<form id="login-form">
+    <input id="email" type="email" placeholder="Email" required>
+    <input id="password" type="password" placeholder="Mật khẩu" required>
+    <button type="submit">Đăng nhập hệ thống</button>
+</form>
+
+<a href="/oauth2/authorization/google">Đăng nhập bằng Google</a>
+<a href="/register.html">Chưa có tài khoản? Đăng ký</a>
+
+<div id="status"></div>
+
+<script>
+    const form = document.getElementById("login-form");
+    const statusEl = document.getElementById("status");
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        try {
+            const response = await fetch("/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || "Đăng nhập thất bại");
+            }
+
+            localStorage.setItem("token", result.data.token);
+            localStorage.setItem("user", JSON.stringify(result.data.user));
+
+            if (result.data.user.role === "ADMIN") {
+                window.location.href = "/admin-dashboard.html";
+            } else {
+                window.location.href = "/user-dashboard.html";
+            }
+        } catch (error) {
+            statusEl.textContent = error.message;
+        }
+    });
+</script>
+</body>
+</html>

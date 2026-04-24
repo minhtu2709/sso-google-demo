@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+</head>
+<body>
+<h1>Trang người dùng</h1>
+<div id="status">Đang tải...</div>
+<div id="user-info"></div>
+
+<button id="logout-btn">Đăng xuất</button>
+
+<script>
+    const statusEl = document.getElementById("status");
+    const userInfoEl = document.getElementById("user-info");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    function saveTokenFromHash() {
+        const hash = window.location.hash.startsWith("#")
+            ? window.location.hash.substring(1)
+            : "";
+
+        const params = new URLSearchParams(hash);
+        const token = params.get("token");
+
+        if (token) {
+            localStorage.setItem("token", token);
+            history.replaceState(null, "", "/user-dashboard.html");
+        }
+    }
+
+    function getToken() {
+        return localStorage.getItem("token");
+    }
+
+    async function callApi(url, options = {}) {
+        const token = getToken();
+
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || "Gọi API thất bại");
+        }
+
+        return result.data;
+    }
+
+    async function loadUser() {
+        const token = getToken();
+
+        if (!token) {
+            window.location.href = "/login.html";
+            return;
+        }
+
+        try {
+            const user = await callApi("/auth/me");
+
+            if (user.role === "ADMIN") {
+                window.location.href = "/admin-dashboard.html";
+                return;
+            }
+
+            userInfoEl.innerHTML = `
+                <p><b>ID:</b> ${user.id}</p>
+                <p><b>Tên:</b> ${user.name}</p>
+                <p><b>Email:</b> ${user.email}</p>
+                <p><b>Role:</b> ${user.role}</p>
+                <p><b>Provider:</b> ${user.provider}</p>
+            `;
+
+            statusEl.textContent = "Tải thông tin người dùng thành công";
+        } catch (error) {
+            statusEl.textContent = error.message;
+        }
+    }
+
+    logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login.html";
+    });
+
+    saveTokenFromHash();
+    loadUser();
+</script>
+</body>
+</html>

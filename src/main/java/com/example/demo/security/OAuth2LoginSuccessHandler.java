@@ -2,6 +2,7 @@ package com.example.demo.security;
 
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.io.IOException;
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
+    private final JwtUtil jwtUtil;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -28,7 +30,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
 
-        userRepository.findByEmail(email).orElseGet(() -> {
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setName(name);
@@ -37,6 +39,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             return userRepository.save(newUser);
         });
 
-        response.sendRedirect("/auth/me");
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+
+        response.sendRedirect("/user-dashboard.html#token=" + token);
     }
 }

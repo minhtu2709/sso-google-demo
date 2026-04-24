@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        :root {
+            --sidebar: #4e73df;
+            --sidebar-dark: #224abe;
+            --bg: #f8f9fc;
+            --panel: #ffffff;
+            --text: #5a5c69;
+            --title: #2e2f37;
+            --line: #e3e6f0;
+            --success: #1cc88a;
+            --info: #36b9cc;
+            --warning: #f6c23e;
+            --shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, var(--sidebar) 0%, var(--sidebar-dark) 100%);
+            color: white;
+            padding: 24px 18px;
+        }
+
+        .brand {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 28px;
+        }
+
+        .nav a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.08);
+        }
+
+        .main {
+            padding: 24px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .topbar h1 {
+            margin: 0;
+            color: var(--title);
+        }
+
+        .btn {
+            border: none;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            background: var(--sidebar);
+            color: white;
+            font: inherit;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: var(--panel);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--sidebar);
+        }
+
+        .card.success { border-left-color: var(--success); }
+        .card.info { border-left-color: var(--info); }
+        .card.warning { border-left-color: var(--warning); }
+
+        .card .label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--title);
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            color: var(--sidebar);
+        }
+
+        .list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .item {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 14px;
+            background: #fff;
+        }
+
+        .item strong {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--title);
+        }
+
+        #status {
+            margin-bottom: 18px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #eef4ff;
+            color: var(--sidebar);
+        }
+
+        @media (max-width: 1000px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .cards,
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">ADMIN</div>
+        <nav class="nav">
+            <a href="#">Dashboard</a>
+            <a href="#category-panel">Danh mục</a>
+            <a href="#product-panel">Sản phẩm</a>
+            <a href="#" id="logout-btn">Đăng xuất</a>
+        </nav>
+    </aside>
+
+    <main class="main">
+        <div class="topbar">
+            <h1>Admin Dashboard</h1>
+            <button class="btn" id="refresh-btn">Tải lại dữ liệu</button>
+        </div>
+
+        <div id="status">Đang tải...</div>
+
+        <section class="cards">
+            <div class="card">
+                <div class="label">Role</div>
+                <div class="value" id="admin-role">-</div>
+            </div>
+            <div class="card success">
+                <div class="label">Admin Name</div>
+                <div class="value" id="admin-name">-</div>
+            </div>
+            <div class="card info">
+                <div class="label">Categories</div>
+                <div class="value" id="category-count">0</div>
+            </div>
+            <div class="card warning">
+                <div class="label">Products</div>
+                <div class="value" id="product-count">0</div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="panel" id="category-panel">
+                <h2>Danh sách danh mục</h2>
+                <div class="list" id="category-list"></div>
+            </div>
+
+            <div class="panel" id="product-panel">
+                <h2>Danh sách sản phẩm</h2>
+                <div class="list" id="product-list"></div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    const statusEl = document.getElementById("status");
+    const adminRoleEl = document.getElementById("admin-role");
+    const adminNameEl = document.getElementById("admin-name");
+    const categoryCountEl = document.getElementById("category-count");
+    const productCountEl = document.getElementById("product-count");
+    const categoryListEl = document.getElementById("category-list");
+    const productListEl = document.getElementById("product-list");
+    const logoutBtn = document.getElementById("logout-btn");
+    const refreshBtn = document.getElementById("refresh-btn");
+
+    function getToken() {
+        return localStorage.getItem("token");
+    }
+
+    async function callApi(url, options = {}) {
+        const token = getToken();
+
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || "Gọi API thất bại");
+        }
+
+        return result.data;
+    }
+
+    async function loadAdminDashboard() {
+        const token = getToken();
+
+        if (!token) {
+            window.location.href = "/login.html";
+            return;
+        }
+
+        try {
+            const user = await callApi("/auth/me");
+
+            if (user.role !== "ADMIN") {
+                window.location.href = "/user-dashboard.html";
+                return;
+            }
+
+            adminRoleEl.textContent = user.role;
+            adminNameEl.textContent = user.name || user.email;
+
+            const categories = await callApi("/categories");
+            categoryCountEl.textContent = categories.length;
+
+            categoryListEl.innerHTML = categories.map(category => `
+                <div class="item">
+                    <strong>${category.name}</strong>
+                    <div>${category.description || "Không có mô tả"}</div>
+                </div>
+            `).join("");
+
+            const productResponse = await fetch("/products");
+            const productJson = await productResponse.json();
+            const products = productJson.data || [];
+            productCountEl.textContent = products.length;
+
+            productListEl.innerHTML = products.map(product => `
+                <div class="item">
+                    <strong>${product.name}</strong>
+                    <div>Giá: ${product.price}</div>
+                    <div>Tồn kho: ${product.stock}</div>
+                    <div>Trạng thái: ${product.status}</div>
+                </div>
+            `).join("");
+
+            statusEl.textContent = "Tải dữ liệu admin thành công";
+        } catch (error) {
+            statusEl.textContent = error.message;
+        }
+    }
+
+    logoutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login.html";
+    });
+
+    refreshBtn.addEventListener("click", loadAdminDashboard);
+
+    loadAdminDashboard();
+</script>
+</body>
+</html>
