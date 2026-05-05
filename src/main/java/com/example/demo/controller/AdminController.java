@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -15,6 +17,29 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
 
     private final UserService userService;
+
+    @GetMapping("/users")
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
+        List<UserResponse> users = userService.getAllUsers();
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách người dùng thành công", users));
+    }
+
+    @PutMapping("/users/{id}")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody com.example.demo.dto.ProfileUpdateRequest request) {
+        UserResponse response = userService.adminUpdateUser(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thông tin người dùng thành công", response));
+    }
+
+    @PutMapping("/users/{id}/password")
+    public ResponseEntity<ApiResponse<Void>> changeUserPassword(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> request) {
+        String newPassword = request.get("newPassword");
+        userService.adminChangeUserPassword(id, newPassword);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật mật khẩu người dùng thành công"));
+    }
 
     @PutMapping("/users/{id}/role")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(

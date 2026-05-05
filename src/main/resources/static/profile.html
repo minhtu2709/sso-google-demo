@@ -1,528 +1,267 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard người dùng</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ sơ cá nhân - Commercial App</title>
+    <link rel="stylesheet" href="/css/style.css">
     <style>
-        :root {
-          --bg: #f5efe6;
-          --panel: #fffdf9;
-          --text: #1f2937;
-          --muted: #6b7280;
-          --line: #e7dccd;
-          --primary: #0f766e;
-          --primary-soft: #dff6f3;
-          --accent: #c2410c;
-          --danger: #b91c1c;
-          --shadow: 0 18px 40px rgba(31, 41, 55, 0.08);
-          --radius: 20px;
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
         }
-
-        * {
-          box-sizing: border-box;
+        .avatar-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
         }
-
-        body {
-          margin: 0;
-          font-family: "Segoe UI", Tahoma, sans-serif;
-          color: var(--text);
-          background:
-            radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 28%),
-            radial-gradient(circle at top right, rgba(194, 65, 12, 0.10), transparent 24%),
-            linear-gradient(180deg, #fcfaf6 0%, var(--bg) 100%);
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
         }
-
-        .container {
-          max-width: 1180px;
-          margin: 0 auto;
-          padding: 32px 20px 48px;
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
         }
-
-        .hero {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 20px;
-          margin-bottom: 24px;
-          padding: 28px;
-          border-radius: 28px;
-          background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-          color: white;
-          box-shadow: var(--shadow);
-        }
-
-        .hero h1 {
-          margin: 0 0 10px;
-          font-size: 34px;
-        }
-
-        .hero p {
-          margin: 0;
-          max-width: 700px;
-          line-height: 1.6;
-          color: rgba(255,255,255,0.88);
-        }
-
-        .hero-actions {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .btn {
-          border: none;
-          padding: 12px 16px;
-          border-radius: 14px;
-          font: inherit;
-          cursor: pointer;
-          text-decoration: none;
-          transition: 0.2s ease;
-        }
-
-        .btn:hover {
-          transform: translateY(-1px);
-        }
-
-        .btn-light {
-          background: white;
-          color: #0f766e;
-          font-weight: 600;
-        }
-
-        .btn-ghost {
-          background: rgba(255,255,255,0.14);
-          color: white;
-          border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .status {
-          margin: 20px 0;
-          padding: 14px 16px;
-          border-radius: 16px;
-          background: #eefbf8;
-          color: #0f766e;
-          border: 1px solid #ccefe9;
-        }
-
-        .status.error {
-          background: #fef2f2;
-          color: var(--danger);
-          border-color: #fecaca;
-        }
-
-        .grid {
-          display: grid;
-          grid-template-columns: 1.1fr 0.9fr;
-          gap: 18px;
-        }
-
-        .stack {
-          display: grid;
-          gap: 18px;
-        }
-
-        .card {
-          background: var(--panel);
-          border: 1px solid var(--line);
-          border-radius: var(--radius);
-          padding: 22px;
-          box-shadow: var(--shadow);
-        }
-
-        .card h2 {
-          margin: 0 0 16px;
-          font-size: 22px;
-        }
-
-        .user-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 16px;
-          margin-bottom: 18px;
-        }
-
-        .avatar {
-          width: 58px;
-          height: 58px;
-          border-radius: 18px;
-          display: grid;
-          place-items: center;
-          background: linear-gradient(135deg, #0f766e, #14b8a6);
-          color: white;
-          font-size: 22px;
-          font-weight: 700;
-        }
-
-        .badge {
-          display: inline-block;
-          padding: 7px 12px;
-          border-radius: 999px;
-          background: var(--primary-soft);
-          color: var(--primary);
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-        }
-
-        .info-list {
-          display: grid;
-          gap: 12px;
-        }
-
-        .info-row {
-          display: flex;
-          justify-content: space-between;
-          gap: 20px;
-          padding-bottom: 10px;
-          border-bottom: 1px dashed var(--line);
-        }
-
-        .info-row:last-child {
-          border-bottom: none;
-          padding-bottom: 0;
-        }
-
-        .label {
-          color: var(--muted);
-        }
-
-        .value {
-          font-weight: 600;
-          text-align: right;
-          word-break: break-word;
-        }
-
-        .summary {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-          margin-bottom: 16px;
-        }
-
-        .pill {
-          padding: 14px;
-          border-radius: 18px;
-          background: #fcf7ef;
-          border: 1px solid var(--line);
-        }
-
-        .pill strong {
-          display: block;
-          font-size: 22px;
-          margin-top: 6px;
-        }
-
-        .list {
-          display: grid;
-          gap: 12px;
-        }
-
-        .item {
-          padding: 16px;
-          border-radius: 16px;
-          border: 1px solid var(--line);
-          background: #fffaf3;
-        }
-
-        .item-title {
-          font-weight: 700;
-          margin-bottom: 6px;
-        }
-
-        .muted {
-          color: var(--muted);
-          font-size: 14px;
-          line-height: 1.5;
-        }
-
-        .admin-box {
-          margin-top: 16px;
-          padding: 16px;
-          border-radius: 16px;
-          background: #fff7ed;
-          border: 1px solid #fed7aa;
-          color: #9a3412;
-        }
-
-        pre {
-          margin: 0;
-          padding: 14px;
-          border-radius: 16px;
-          background: #111827;
-          color: #e5e7eb;
-          overflow: auto;
-          font-size: 13px;
-        }
-
-        @media (max-width: 900px) {
-          .grid {
-            grid-template-columns: 1fr;
-          }
-
-          .hero {
-            flex-direction: column;
-          }
-
-          .summary {
-            grid-template-columns: 1fr;
-          }
-
-          .info-row {
-            flex-direction: column;
-          }
-
-          .value {
-            text-align: left;
-          }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <section class="hero">
-        <div>
-            <h1>Dashboard sau đăng nhập</h1>
-            <p>
-                Trang này nhận token, lấy thông tin người dùng hiện tại, rồi gọi các API backend như giỏ hàng và đơn hàng để hiển thị trực tiếp.
-            </p>
-        </div>
-        <div class="hero-actions">
-            <button class="btn btn-light" id="refresh-btn">Tải lại</button>
-            <button class="btn btn-ghost" id="logout-btn">Đăng xuất</button>
-        </div>
-    </section>
 
-    <div id="status" class="status">Đang tải dữ liệu...</div>
+<nav class="navbar">
+    <div class="container">
+        <div class="navbar-brand">Commercial App - Hồ Sơ</div>
+        <div class="navbar-nav">
+            <button id="btn-back" class="btn btn-outline btn-sm">Quay lại</button>
+            <button class="btn btn-outline btn-sm logout-btn">Đăng xuất</button>
+        </div>
+    </div>
+</nav>
 
-    <section class="grid">
-        <div class="stack">
-            <article class="card">
-                <h2>Thông tin người dùng</h2>
-                <div class="user-header">
-                    <div style="display:flex; gap:14px; align-items:center;">
-                        <div class="avatar" id="avatar">U</div>
-                        <div>
-                            <div id="welcome" style="font-size:20px; font-weight:700;">Xin chào</div>
-                            <div class="muted" id="provider-text">Đang xác định tài khoản...</div>
+<div class="container" style="max-width: 800px; margin-top: 20px;">
+    <div id="status" class="status-message mb-3">Đang tải...</div>
+
+    <div class="card">
+        <div class="profile-header">
+            <img id="avatar-display" src="https://via.placeholder.com/80" alt="Avatar" class="avatar-img">
+            <div>
+                <h3 style="margin: 0;" id="display-name">Đang tải...</h3>
+                <span class="badge badge-primary mt-2" id="display-role">USER</span>
+            </div>
+            <div style="margin-left: auto;" id="password-action-container">
+                <a href="/change-password.html" class="btn btn-outline btn-sm">Đổi mật khẩu</a>
+            </div>
+        </div>
+
+        <h4 class="mb-3">Cập nhật thông tin cá nhân</h4>
+        <form id="profile-form">
+            <div class="form-group">
+                <label class="form-label">Họ và tên</label>
+                <input type="text" id="edit-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email (Không thể sửa)</label>
+                <input type="email" id="edit-email" class="form-control" disabled style="background-color: var(--secondary-color);">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Số điện thoại</label>
+                <input type="tel" id="edit-phone" class="form-control" required pattern="^[0-9]{10}$" title="Vui lòng nhập đúng 10 chữ số">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Địa chỉ hiện tại</label>
+                <input type="text" id="edit-address" class="form-control" required placeholder="Nhập địa chỉ giao hàng">
+            </div>
+
+            <div class="form-group" style="background: var(--bg-color); padding: 15px; border-radius: var(--border-radius-sm);">
+                <label class="form-label text-primary" style="font-size: 0.9rem; cursor: pointer;" id="toggle-vn-address">
+                    <input type="checkbox" id="use-vn-picker"> Chọn địa chỉ theo Tỉnh/Thành VN
+                </label>
+                <div id="vn-address-picker" style="display: none; margin-top: 10px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <select id="prov-select" class="form-control">
+                                <option value="">Chọn Tỉnh/Thành</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <select id="dist-select" class="form-control" disabled>
+                                <option value="">Chọn Quận/Huyện</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <select id="ward-select" class="form-control" disabled>
+                                <option value="">Chọn Phường/Xã</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="badge" id="role-badge">USER</div>
+                    <input type="text" id="street-input" class="form-control mt-2" placeholder="Số nhà, tên đường...">
                 </div>
-
-                <div class="info-list" id="user-info"></div>
-
-                <div id="admin-box" class="admin-box" style="display:none;">
-                    Tài khoản này có quyền ADMIN. Bạn có thể mở rộng thêm khu quản trị cho các API như đổi role, quản lý sản phẩm hoặc danh mục.
-                </div>
-            </article>
-
-            <article class="card">
-                <h2>Đơn hàng của tôi</h2>
-                <div class="list" id="order-info"></div>
-            </article>
-        </div>
-
-        <div class="stack">
-            <article class="card">
-                <h2>Giỏ hàng hiện tại</h2>
-                <div class="summary">
-                    <div class="pill">
-                        Tổng sản phẩm
-                        <strong id="cart-total-items">0</strong>
-                    </div>
-                    <div class="pill">
-                        Tổng tiền
-                        <strong id="cart-total-price">0</strong>
-                    </div>
-                    <div class="pill">
-                        Trạng thái
-                        <strong id="cart-state">Trống</strong>
-                    </div>
-                </div>
-                <div class="list" id="cart-info"></div>
-            </article>
-
-            <article class="card">
-                <h2>JWT hiện tại</h2>
-                <pre id="token-box">Chưa có token</pre>
-            </article>
-        </div>
-    </section>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Lưu thông tin</button>
+        </form>
+    </div>
 </div>
 
+<script src="/js/app.js"></script>
 <script>
-    const statusEl = document.getElementById("status");
-    const userInfoEl = document.getElementById("user-info");
-    const cartInfoEl = document.getElementById("cart-info");
-    const orderInfoEl = document.getElementById("order-info");
-    const logoutBtn = document.getElementById("logout-btn");
-    const refreshBtn = document.getElementById("refresh-btn");
-    const tokenBoxEl = document.getElementById("token-box");
-    const roleBadgeEl = document.getElementById("role-badge");
-    const welcomeEl = document.getElementById("welcome");
-    const providerTextEl = document.getElementById("provider-text");
-    const avatarEl = document.getElementById("avatar");
-    const adminBoxEl = document.getElementById("admin-box");
-    const cartTotalItemsEl = document.getElementById("cart-total-items");
-    const cartTotalPriceEl = document.getElementById("cart-total-price");
-    const cartStateEl = document.getElementById("cart-state");
+    document.addEventListener("DOMContentLoaded", () => {
+        let currentUser = null;
 
-    function saveTokenFromHash() {
-      const hash = window.location.hash.startsWith("#")
-        ? window.location.hash.substring(1)
-        : "";
+        async function initProfile() {
+            const token = App.getToken();
+            if (!token) return window.location.href = "/login.html";
 
-      const params = new URLSearchParams(hash);
-      const token = params.get("token");
+            try {
+                currentUser = await App.callApi("/auth/me");
+                document.getElementById("status").style.display = 'none';
 
-      if (token) {
-        localStorage.setItem("token", token);
-        history.replaceState(null, "", "/profile.html");
-      }
-    }
+                // Fill data
+                document.getElementById("display-name").textContent = currentUser.name || "Người dùng";
+                document.getElementById("display-role").textContent = currentUser.role;
+                if (currentUser.role === 'ADMIN') document.getElementById("display-role").className = "badge badge-danger mt-2";
+                if (currentUser.avatarUrl) document.getElementById("avatar-display").src = currentUser.avatarUrl;
 
-    function getToken() {
-      return localStorage.getItem("token");
-    }
+                document.getElementById("edit-name").value = currentUser.name || "";
+                document.getElementById("edit-email").value = currentUser.email || "";
+                document.getElementById("edit-phone").value = currentUser.phoneNumber || "";
+                document.getElementById("edit-address").value = currentUser.address || "";
 
-    function setStatus(message, isError = false) {
-      statusEl.textContent = message;
-      statusEl.className = isError ? "status error" : "status";
-    }
+                // Hide password section if using social login
+                if (currentUser.provider !== "LOCAL") {
+                    document.getElementById("password-action-container").style.display = "none";
+                }
 
-    async function callApi(url, options = {}) {
-      const token = getToken();
+                // Setup back button
+                document.getElementById("btn-back").addEventListener("click", () => {
+                    if (currentUser.role === "ADMIN") {
+                        window.location.href = "/admin-dashboard.html";
+                    } else {
+                        window.location.href = "/user-dashboard.html";
+                    }
+                });
 
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + token,
-          ...(options.headers || {})
+            } catch (error) {
+                App.showStatus("status", error.message, false);
+                if (error.message.includes("Token")) setTimeout(() => App.logout(), 2000);
+            }
         }
-      });
 
-      const result = await response.json();
+        // ================= ADDRESS PICKER LOGIC =================
+        const provSelect = document.getElementById("prov-select");
+        const distSelect = document.getElementById("dist-select");
+        const wardSelect = document.getElementById("ward-select");
+        const streetInput = document.getElementById("street-input");
+        const addressInput = document.getElementById("edit-address");
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Gọi API thất bại");
-      }
+        document.getElementById("use-vn-picker").addEventListener("change", async (e) => {
+            const picker = document.getElementById("vn-address-picker");
+            if (e.target.checked) {
+                picker.style.display = "block";
+                addressInput.readOnly = true;
+                addressInput.style.backgroundColor = "var(--secondary-color)";
+                
+                if (provSelect.options.length === 1) { // Load provinces first time
+                    const provs = await App.LocationAPI.getProvinces();
+                    provSelect.innerHTML += provs.map(p => `<option value="${p.code}" data-name="${p.name}">${p.name}</option>`).join('');
+                }
+            } else {
+                picker.style.display = "none";
+                addressInput.readOnly = false;
+                addressInput.style.backgroundColor = "var(--white)";
+            }
+        });
 
-      return result.data;
-    }
+        provSelect.addEventListener("change", async (e) => {
+            const code = e.target.value;
+            distSelect.innerHTML = '<option value="">Chọn Quận/Huyện</option>';
+            wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
+            wardSelect.disabled = true;
+            if (!code) {
+                distSelect.disabled = true;
+                updateAddressField();
+                return;
+            }
+            distSelect.disabled = false;
+            const dists = await App.LocationAPI.getDistricts(code);
+            distSelect.innerHTML += dists.map(d => `<option value="${d.code}" data-name="${d.name}">${d.name}</option>`).join('');
+            updateAddressField();
+        });
 
-    function renderUser(user) {
-      const firstLetter = (user.name || user.email || "U").trim().charAt(0).toUpperCase();
+        distSelect.addEventListener("change", async (e) => {
+            const code = e.target.value;
+            wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
+            if (!code) {
+                wardSelect.disabled = true;
+                updateAddressField();
+                return;
+            }
+            wardSelect.disabled = false;
+            const wards = await App.LocationAPI.getWards(code);
+            wardSelect.innerHTML += wards.map(w => `<option value="${w.code}" data-name="${w.name}">${w.name}</option>`).join('');
+            updateAddressField();
+        });
 
-      avatarEl.textContent = firstLetter;
-      welcomeEl.textContent = `Xin chào, ${user.name || "người dùng"}`;
-      providerTextEl.textContent = `Đăng nhập qua: ${user.provider || "LOCAL"}`;
-      roleBadgeEl.textContent = user.role || "USER";
+        wardSelect.addEventListener("change", updateAddressField);
+        streetInput.addEventListener("input", updateAddressField);
 
-      userInfoEl.innerHTML = `
-        <div class="info-row">
-          <span class="label">ID</span>
-          <span class="value">${user.id ?? "-"}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Tên</span>
-          <span class="value">${user.name || "-"}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Email</span>
-          <span class="value">${user.email || "-"}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Role</span>
-          <span class="value">${user.role || "-"}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Provider</span>
-          <span class="value">${user.provider || "LOCAL"}</span>
-        </div>
-      `;
+        function updateAddressField() {
+            if (!document.getElementById("use-vn-picker").checked) return;
+            const p = provSelect.options[provSelect.selectedIndex]?.getAttribute("data-name") || "";
+            const d = distSelect.options[distSelect.selectedIndex]?.getAttribute("data-name") || "";
+            const w = wardSelect.options[wardSelect.selectedIndex]?.getAttribute("data-name") || "";
+            const s = streetInput.value.trim();
 
-      adminBoxEl.style.display = user.role === "ADMIN" ? "block" : "none";
-    }
+            let parts = [];
+            if(s) parts.push(s);
+            if(w) parts.push(w);
+            if(d) parts.push(d);
+            if(p) parts.push(p);
 
-    function renderCart(cart) {
-      const items = cart.items || [];
-      cartTotalItemsEl.textContent = cart.totalItems ?? 0;
-      cartTotalPriceEl.textContent = cart.totalPrice ?? 0;
-      cartStateEl.textContent = items.length > 0 ? "Có hàng" : "Trống";
+            addressInput.value = parts.join(", ");
+        }
 
-      if (items.length === 0) {
-        cartInfoEl.innerHTML = `<div class="muted">Giỏ hàng của bạn đang trống.</div>`;
-        return;
-      }
+        // ================= FORM SUBMITS =================
+        document.getElementById("profile-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
 
-      cartInfoEl.innerHTML = items.map(item => `
-        <div class="item">
-          <div class="item-title">${item.productName || "Sản phẩm"}</div>
-          <div class="muted">Số lượng: ${item.quantity}</div>
-          <div class="muted">Đơn giá: ${item.price}</div>
-          <div class="muted">Thành tiền: ${item.subtotal}</div>
-        </div>
-      `).join("");
-    }
+            const payload = {
+                name: document.getElementById("edit-name").value.trim(),
+                phoneNumber: document.getElementById("edit-phone").value.trim(),
+                address: document.getElementById("edit-address").value.trim()
+            };
 
-    function renderOrders(orders) {
-      if (!orders || orders.length === 0) {
-        orderInfoEl.innerHTML = `<div class="muted">Bạn chưa có đơn hàng nào.</div>`;
-        return;
-      }
+            try {
+                currentUser = await App.callApi("/auth/me", {
+                    method: "PUT",
+                    body: JSON.stringify(payload)
+                });
+                
+                alert("Cập nhật thông tin thành công!");
+                document.getElementById("display-name").textContent = currentUser.name;
+                btn.disabled = false;
+            } catch (error) { 
+                alert(error.message);
+                btn.disabled = false;
+            }
+        });
 
-      orderInfoEl.innerHTML = orders.map(order => `
-        <div class="item">
-          <div class="item-title">Đơn hàng #${order.id}</div>
-          <div class="muted">Trạng thái: ${order.status}</div>
-          <div class="muted">Tổng tiền: ${order.totalPrice}</div>
-          <div class="muted">Địa chỉ: ${order.shippingAddress || "-"}</div>
-          <div class="muted">Ngày tạo: ${order.createdAt || "-"}</div>
-        </div>
-      `).join("");
-    }
-
-    async function loadDashboard() {
-      const token = getToken();
-
-      if (!token) {
-        setStatus("Chưa có token, hãy đăng nhập lại.", true);
-        window.location.href = "/login.html";
-        return;
-      }
-
-      tokenBoxEl.textContent = token;
-      setStatus("Đang tải dữ liệu từ backend...");
-
-      try {
-        const user = await callApi("/auth/me");
-        renderUser(user);
-
-        const cart = await callApi("/cart");
-        renderCart(cart);
-
-        const orders = await callApi("/orders");
-        renderOrders(orders);
-
-        setStatus("Tải dữ liệu thành công.");
-      } catch (error) {
-        setStatus(error.message, true);
-      }
-    }
-
-    logoutBtn.addEventListener("click", () => {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login.html";
+        initProfile();
     });
-
-    refreshBtn.addEventListener("click", loadDashboard);
-
-    saveTokenFromHash();
-    loadDashboard();
 </script>
 </body>
 </html>

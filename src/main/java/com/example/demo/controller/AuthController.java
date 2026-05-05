@@ -3,6 +3,8 @@ package com.example.demo.controller;
 import com.example.demo.dto.ApiResponse;
 import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.RegisterRequest;
+import com.example.demo.dto.ProfileUpdateRequest;
+import com.example.demo.dto.ChangePasswordRequest;
 import com.example.demo.dto.UserResponse;
 import com.example.demo.service.UserService;
 import com.example.demo.util.JwtUtil;
@@ -81,5 +83,63 @@ public class AuthController {
 
         UserResponse response = userService.getUserByEmail(email);
         return ResponseEntity.ok(ApiResponse.success("Thành công", response));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
+            @AuthenticationPrincipal Object principal,
+            @Valid @RequestBody ProfileUpdateRequest request) {
+
+        if (principal == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Chưa đăng nhập"));
+        }
+
+        String email;
+
+        if (principal instanceof OAuth2User oAuth2User) {
+            email = oAuth2User.getAttribute("email");
+        } else if (principal instanceof UserDetails userDetails) {
+            email = userDetails.getUsername();
+        } else if (principal instanceof String emailStr) {
+            email = emailStr;
+        } else {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Không xác định được người dùng"));
+        }
+
+        UserResponse response = userService.updateProfile(email, request);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thành công", response));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal Object principal,
+            @Valid @RequestBody ChangePasswordRequest request) {
+
+        if (principal == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Chưa đăng nhập"));
+        }
+
+        String email;
+
+        if (principal instanceof OAuth2User oAuth2User) {
+            email = oAuth2User.getAttribute("email");
+        } else if (principal instanceof UserDetails userDetails) {
+            email = userDetails.getUsername();
+        } else if (principal instanceof String emailStr) {
+            email = emailStr;
+        } else {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Không xác định được người dùng"));
+        }
+
+        userService.changePassword(email, request);
+        return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công"));
     }
 }

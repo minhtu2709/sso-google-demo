@@ -3,323 +3,438 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Trang Quản Trị - Commercial App</title>
+    <link rel="stylesheet" href="/css/style.css">
     <style>
-        :root {
-            --sidebar: #4e73df;
-            --sidebar-dark: #224abe;
-            --bg: #f8f9fc;
-            --panel: #ffffff;
-            --text: #5a5c69;
-            --title: #2e2f37;
-            --line: #e3e6f0;
-            --success: #1cc88a;
-            --info: #36b9cc;
-            --warning: #f6c23e;
-            --shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: "Segoe UI", Tahoma, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: 240px 1fr;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            background: linear-gradient(180deg, var(--sidebar) 0%, var(--sidebar-dark) 100%);
-            color: white;
-            padding: 24px 18px;
-        }
-
-        .brand {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 28px;
-        }
-
-        .nav a {
-            display: block;
-            color: white;
-            text-decoration: none;
-            padding: 12px 14px;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            background: rgba(255,255,255,0.08);
-        }
-
-        .main {
-            padding: 24px;
-        }
-
-        .topbar {
+        .flex-between {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
         }
-
-        .topbar h1 {
-            margin: 0;
-            color: var(--title);
+        .section-title {
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
         }
-
-        .btn {
-            border: none;
-            padding: 12px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            background: var(--sidebar);
-            color: white;
-            font: inherit;
+        .form-row {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
         }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
+        .form-row > .form-group {
+            flex: 1;
+            margin-bottom: 0;
         }
-
-        .card {
-            background: var(--panel);
-            border-radius: 16px;
-            padding: 18px;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--sidebar);
+        /* Overlay bắt buộc cập nhật hồ sơ */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
-
-        .card.success { border-left-color: var(--success); }
-        .card.info { border-left-color: var(--info); }
-        .card.warning { border-left-color: var(--warning); }
-
-        .card .label {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-
-        .card .value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--title);
-        }
-
-        .content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .panel {
-            background: white;
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            padding: 20px;
-        }
-
-        .panel h2 {
-            margin-top: 0;
-            color: var(--sidebar);
-        }
-
-        .list {
-            display: grid;
-            gap: 12px;
-        }
-
-        .item {
-            border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 14px;
-            background: #fff;
-        }
-
-        .item strong {
-            display: block;
-            margin-bottom: 6px;
-            color: var(--title);
-        }
-
-        #status {
-            margin-bottom: 18px;
-            padding: 12px 14px;
-            border-radius: 10px;
-            background: #eef4ff;
-            color: var(--sidebar);
-        }
-
-        @media (max-width: 1000px) {
-            .layout {
-                grid-template-columns: 1fr;
-            }
-
-            .cards,
-            .content {
-                grid-template-columns: 1fr;
-            }
+        .overlay.active {
+            visibility: visible;
+            opacity: 1;
         }
     </style>
 </head>
 <body>
-<div class="layout">
-    <aside class="sidebar">
-        <div class="brand">ADMIN</div>
-        <nav class="nav">
-            <a href="#">Dashboard</a>
-            <a href="#category-panel">Danh mục</a>
-            <a href="#product-panel">Sản phẩm</a>
-            <a href="#" id="logout-btn">Đăng xuất</a>
-        </nav>
-    </aside>
 
-    <main class="main">
-        <div class="topbar">
-            <h1>Admin Dashboard</h1>
-            <button class="btn" id="refresh-btn">Tải lại dữ liệu</button>
+<nav class="navbar" style="border-bottom: 3px solid var(--danger-color);">
+    <div class="container">
+        <div class="navbar-brand text-danger">Admin Panel</div>
+        <div class="navbar-nav">
+            <span id="admin-name" class="text-muted" style="margin-right: 15px; font-weight: 500;"></span>
+            <a href="/profile.html" class="btn btn-primary btn-sm">Cập nhật thông tin</a>
+            <a href="/change-password.html" class="btn btn-outline btn-sm" id="admin-change-pwd-btn">Đổi mật khẩu</a>
+            <button class="btn btn-outline btn-sm logout-btn">Đăng xuất</button>
         </div>
+    </div>
+</nav>
 
-        <div id="status">Đang tải...</div>
-
-        <section class="cards">
+<div class="container" id="main-content" style="max-width: 1400px; display: none;">
+    <div id="status" class="status-message mb-3">Đang tải...</div>
+    
+    <div class="grid-cards" style="grid-template-columns: 1fr 2fr;">
+        <!-- Left Column: Categories -->
+        <div>
+            <!-- Categories Section -->
             <div class="card">
-                <div class="label">Role</div>
-                <div class="value" id="admin-role">-</div>
-            </div>
-            <div class="card success">
-                <div class="label">Admin Name</div>
-                <div class="value" id="admin-name">-</div>
-            </div>
-            <div class="card info">
-                <div class="label">Categories</div>
-                <div class="value" id="category-count">0</div>
-            </div>
-            <div class="card warning">
-                <div class="label">Products</div>
-                <div class="value" id="product-count">0</div>
-            </div>
-        </section>
+                <h4 class="section-title">Quản lý Danh Mục</h4>
+            
+            <form id="category-form" class="mb-4">
+                <div class="form-group">
+                    <label class="form-label">Tên danh mục</label>
+                    <input type="text" id="cat-name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mô tả</label>
+                    <input type="text" id="cat-desc" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Thêm Danh Mục</button>
+            </form>
 
-        <section class="content">
-            <div class="panel" id="category-panel">
-                <h2>Danh sách danh mục</h2>
-                <div class="list" id="category-list"></div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="category-list">
+                        <!-- Render dynamically -->
+                    </tbody>
+                </table>
             </div>
+        </div>
+        </div>
+        
+        <!-- Products Section -->
+        <div class="card" style="align-self: start;">
+            <h4 class="section-title">Quản lý Sản Phẩm</h4>
+            
+            <form id="product-form" class="mb-4">
+                <div class="form-row mb-3">
+                    <div class="form-group">
+                        <label class="form-label">Tên sản phẩm</label>
+                        <input type="text" id="prod-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Danh mục</label>
+                        <select id="prod-category" class="form-control" required>
+                            <option value="">Chọn danh mục...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row mb-3">
+                    <div class="form-group">
+                        <label class="form-label">Giá</label>
+                        <input type="number" id="prod-price" class="form-control" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tồn kho</label>
+                        <input type="number" id="prod-stock" class="form-control" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Trạng thái</label>
+                        <select id="prod-status" class="form-control">
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hình ảnh URL</label>
+                    <input type="text" id="prod-image" class="form-control" placeholder="https://...">
+                </div>
+                <button type="submit" class="btn btn-success btn-sm mt-2">Thêm Sản Phẩm</button>
+            </form>
 
-            <div class="panel" id="product-panel">
-                <h2>Danh sách sản phẩm</h2>
-                <div class="list" id="product-list"></div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên SP</th>
+                            <th>Danh Mục</th>
+                            <th>Giá</th>
+                            <th>Kho</th>
+                            <th>Status</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="product-list">
+                        <!-- Render dynamically -->
+                    </tbody>
+                </table>
             </div>
-        </section>
-    </main>
+        </div>
+        <!-- User Management Section -->
+        <div class="card" style="grid-column: 1 / -1; margin-top: 20px;">
+            <h4 class="section-title">Quản lý Người Dùng</h4>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Avatar</th>
+                            <th>Họ Tên</th>
+                            <th>Email</th>
+                            <th>SĐT</th>
+                            <th>Quyền</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-list">
+                        <!-- Render dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- Modal Update User Info -->
+<div class="overlay" id="edit-user-overlay">
+    <div class="card" style="max-width: 450px;">
+        <h3 class="mb-3 text-center">Cập nhật User</h3>
+        <form id="edit-user-form">
+            <input type="hidden" id="edit-user-id">
+            <div class="form-group">
+                <label class="form-label">Họ và tên</label>
+                <input type="text" id="admin-edit-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Số điện thoại</label>
+                <input type="tel" id="admin-edit-phone" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Địa chỉ</label>
+                <input type="text" id="admin-edit-address" class="form-control" required>
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label">Quyền hạn</label>
+                <select id="admin-edit-role" class="form-control">
+                    <option value="USER">USER</option>
+                    <option value="ADMIN">ADMIN</option>
+                </select>
+            </div>
+            <div class="flex-between">
+                <button type="button" class="btn btn-outline" onclick="closeEditUserOverlay()">Hủy</button>
+                <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Update User Password -->
+<div class="overlay" id="pwd-user-overlay">
+    <div class="card" style="max-width: 450px;">
+        <h3 class="mb-3 text-center text-danger">Đặt lại mật khẩu</h3>
+        <form id="pwd-user-form">
+            <input type="hidden" id="pwd-user-id">
+            <div class="form-group mb-4">
+                <label class="form-label">Mật khẩu mới</label>
+                <input type="password" id="admin-edit-pwd" class="form-control" required minlength="6">
+            </div>
+            <div class="flex-between">
+                <button type="button" class="btn btn-outline" onclick="closePwdUserOverlay()">Hủy</button>
+                <button type="submit" class="btn btn-danger">Cập nhật mật khẩu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Overlay: Enforce Profile Completion -->
+<div class="overlay" id="enforce-profile-overlay">
+    <div class="card" style="max-width: 450px;">
+        <h3 class="mb-2 text-danger text-center">Hoàn tất hồ sơ Quản Trị Viên</h3>
+        <p class="text-muted text-center mb-4">Xin vui lòng cập nhật thông tin tài khoản (Họ tên, SĐT) để tiếp tục.</p>
+        
+        <form id="enforce-profile-form">
+            <div class="form-group">
+                <label class="form-label">Họ và tên</label>
+                <input type="text" id="enforce-name" class="form-control" required placeholder="Nhập họ tên của bạn">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Số điện thoại</label>
+                <input type="tel" id="enforce-phone" class="form-control" required placeholder="Ví dụ: 0987654321" pattern="^[0-9]{10}$" title="Vui lòng nhập đúng 10 chữ số">
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label">Địa chỉ</label>
+                <input type="text" id="enforce-address" class="form-control" required placeholder="Địa chỉ cơ quan">
+            </div>
+            <button type="submit" class="btn btn-danger" style="width: 100%;">Lưu thông tin & Truy cập Admin Panel</button>
+        </form>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
 <script>
-    const statusEl = document.getElementById("status");
-    const adminRoleEl = document.getElementById("admin-role");
-    const adminNameEl = document.getElementById("admin-name");
-    const categoryCountEl = document.getElementById("category-count");
-    const productCountEl = document.getElementById("product-count");
-    const categoryListEl = document.getElementById("category-list");
-    const productListEl = document.getElementById("product-list");
-    const logoutBtn = document.getElementById("logout-btn");
-    const refreshBtn = document.getElementById("refresh-btn");
+    document.addEventListener("DOMContentLoaded", () => {
+        App.saveTokenFromHash();
 
-    function getToken() {
-        return localStorage.getItem("token");
-    }
+        let categories = [];
+        let currentUser = null;
 
-    async function callApi(url, options = {}) {
-        const token = getToken();
+        async function initAdmin() {
+            const token = App.getToken();
+            if (!token) return window.location.href = "/login.html";
 
-        const response = await fetch(url, {
-            ...options,
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token
+            try {
+                currentUser = await App.callApi("/auth/me");
+                if (currentUser.role !== "ADMIN") return window.location.href = "/user-dashboard.html";
+                
+                if (currentUser.provider !== "LOCAL") {
+                    const pwdBtn = document.getElementById("admin-change-pwd-btn");
+                    if (pwdBtn) pwdBtn.style.display = "none";
+                }
+                
+                checkProfileCompletion();
+            } catch (error) {
+                App.showStatus("status", error.message, false);
+                if (error.message.includes("Token")) setTimeout(() => App.logout(), 2000);
+            }
+        }
+
+        function checkProfileCompletion() {
+            const u = currentUser;
+            const isProfileIncomplete = !u.name || !u.phoneNumber || !u.address;
+
+            if (isProfileIncomplete) {
+                document.getElementById("enforce-profile-overlay").classList.add("active");
+                document.getElementById("main-content").style.display = "none";
+                
+                // Pre-fill if some data exists
+                document.getElementById("enforce-name").value = u.name || '';
+                document.getElementById("enforce-phone").value = u.phoneNumber || '';
+                document.getElementById("enforce-address").value = u.address || '';
+            } else {
+                document.getElementById("enforce-profile-overlay").classList.remove("active");
+                document.getElementById("main-content").style.display = "block";
+                
+                setupDashboard();
+            }
+        }
+
+        // Xử lý Form trong Overlay
+        document.getElementById("enforce-profile-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById("enforce-name").value.trim(),
+                phoneNumber: document.getElementById("enforce-phone").value.trim(),
+                address: document.getElementById("enforce-address").value.trim()
+            };
+
+            try {
+                currentUser = await App.callApi("/auth/me", {
+                    method: "PUT",
+                    body: JSON.stringify(payload)
+                });
+                alert("Cập nhật thông tin thành công!");
+                checkProfileCompletion();
+            } catch (error) {
+                alert(error.message);
             }
         });
 
-        const result = await response.json();
+        async function setupDashboard() {
+            document.getElementById("admin-name").textContent = "Xin chào, " + currentUser.name;
+            document.getElementById("status").style.display = 'none';
 
-        if (!response.ok || !result.success) {
-            throw new Error(result.message || "Gọi API thất bại");
+            await loadCategories();
+            await loadProducts();
         }
 
-        return result.data;
-    }
+        // ================= CATEGORY LOGIC =================
+        async function loadCategories() {
+            try {
+                categories = await App.callApi("/categories");
+                
+                const tbody = document.getElementById("category-list");
+                tbody.innerHTML = categories.map(c => `
+                    <tr>
+                        <td>${c.id}</td>
+                        <td>${c.name}</td>
+                        <td><button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id})">Xóa</button></td>
+                    </tr>
+                `).join("");
 
-    async function loadAdminDashboard() {
-        const token = getToken();
-
-        if (!token) {
-            window.location.href = "/login.html";
-            return;
-        }
-
-        try {
-            const user = await callApi("/auth/me");
-
-            if (user.role !== "ADMIN") {
-                window.location.href = "/user-dashboard.html";
-                return;
+                const select = document.getElementById("prod-category");
+                select.innerHTML = '<option value="">Chọn danh mục...</option>' + 
+                    categories.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+            } catch (error) {
+                console.error(error);
+                alert("Lỗi tải danh mục: " + error.message);
             }
-
-            adminRoleEl.textContent = user.role;
-            adminNameEl.textContent = user.name || user.email;
-
-            const categories = await callApi("/categories");
-            categoryCountEl.textContent = categories.length;
-
-            categoryListEl.innerHTML = categories.map(category => `
-                <div class="item">
-                    <strong>${category.name}</strong>
-                    <div>${category.description || "Không có mô tả"}</div>
-                </div>
-            `).join("");
-
-            const productResponse = await fetch("/products");
-            const productJson = await productResponse.json();
-            const products = productJson.data || [];
-            productCountEl.textContent = products.length;
-
-            productListEl.innerHTML = products.map(product => `
-                <div class="item">
-                    <strong>${product.name}</strong>
-                    <div>Giá: ${product.price}</div>
-                    <div>Tồn kho: ${product.stock}</div>
-                    <div>Trạng thái: ${product.status}</div>
-                </div>
-            `).join("");
-
-            statusEl.textContent = "Tải dữ liệu admin thành công";
-        } catch (error) {
-            statusEl.textContent = error.message;
         }
-    }
 
-    logoutBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login.html";
+        document.getElementById("category-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("cat-name").value;
+            const description = document.getElementById("cat-desc").value;
+            try {
+                await App.callApi("/categories", {
+                    method: "POST",
+                    body: JSON.stringify({ name, description })
+                });
+                document.getElementById("category-form").reset();
+                loadCategories();
+            } catch (error) { alert(error.message); }
+        });
+
+        window.deleteCategory = async (id) => {
+            if(!confirm("Bạn có chắc muốn xóa danh mục này?")) return;
+            try {
+                await App.callApi(`/categories/${id}`, { method: "DELETE" });
+                loadCategories();
+            } catch (error) { alert(error.message); }
+        };
+
+        // ================= PRODUCT LOGIC =================
+        async function loadProducts() {
+            try {
+                const response = await App.callApi("/products?size=50"); 
+                const products = response;
+                const items = products.content || products;
+                
+                const tbody = document.getElementById("product-list");
+                tbody.innerHTML = items.map(p => `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${p.name}</td>
+                        <td>${p.categoryName}</td>
+                        <td>${p.price.toLocaleString('vi-VN')} đ</td>
+                        <td>${p.stock}</td>
+                        <td><span class="badge ${p.status === 'ACTIVE' ? 'badge-success' : 'badge-primary'}">${p.status}</span></td>
+                        <td><button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Xóa</button></td>
+                    </tr>
+                `).join("");
+            } catch (error) {
+                console.error(error);
+                alert("Lỗi tải sản phẩm: " + error.message);
+            }
+        }
+
+        document.getElementById("product-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById("prod-name").value,
+                categoryId: parseInt(document.getElementById("prod-category").value),
+                price: parseFloat(document.getElementById("prod-price").value),
+                stock: parseInt(document.getElementById("prod-stock").value),
+                status: document.getElementById("prod-status").value,
+                imageUrl: document.getElementById("prod-image").value || null
+            };
+
+            try {
+                await App.callApi("/products", {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                document.getElementById("product-form").reset();
+                loadProducts();
+            } catch (error) { alert(error.message); }
+        });
+
+        window.deleteProduct = async (id) => {
+            if(!confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
+            try {
+                await App.callApi(`/products/${id}`, { method: "DELETE" });
+                loadProducts();
+            } catch (error) { alert(error.message); }
+        };
+
+        initAdmin();
     });
-
-    refreshBtn.addEventListener("click", loadAdminDashboard);
-
-    loadAdminDashboard();
 </script>
 </body>
 </html>

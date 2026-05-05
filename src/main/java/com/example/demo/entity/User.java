@@ -23,6 +23,12 @@ public class User {
 
     private String name;
 
+    private String phoneNumber;
+
+    private String address;
+
+    private String avatarUrl;
+
     private String provider;
 
     // Thêm role — dùng Enum như Order.OrderStatus

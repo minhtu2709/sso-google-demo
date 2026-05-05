@@ -3,96 +3,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Dashboard</title>
+    <title>Cửa hàng - Commercial App</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .product-card {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            padding: 15px;
+            text-align: center;
+            background: var(--white);
+        }
+        .product-card img {
+            max-width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 10px;
+            background-color: var(--bg-color);
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .cart-total {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-top: 15px;
+            text-align: right;
+            color: var(--danger-color);
+        }
+        .order-card {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: var(--border-radius-sm);
+        }
+
+        /* Overlay bắt buộc cập nhật hồ sơ */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
-<h1>Trang người dùng</h1>
-<div id="status">Đang tải...</div>
-<div id="user-info"></div>
 
-<button id="logout-btn">Đăng xuất</button>
+<nav class="navbar">
+    <div class="container">
+        <div class="navbar-brand">Commercial App</div>
+        <div class="navbar-nav">
+            <span id="user-name" class="text-muted" style="margin-right: 15px; font-weight: 500;"></span>
+            <a href="/profile.html" class="btn btn-primary btn-sm">Cập nhật thông tin</a>
+            <button class="btn btn-outline btn-sm logout-btn">Đăng xuất</button>
+        </div>
+    </div>
+</nav>
 
+<!-- Main Layout (Hidden until profile is complete) -->
+<div class="container" id="main-content" style="max-width: 1400px; display: none;">
+    <div id="status" class="status-message mb-3">Đang tải...</div>
+    
+    <div class="grid-cards" style="grid-template-columns: 2fr 1fr;">
+        <!-- Left Column: Store -->
+        <div>
+            <div class="card mb-4">
+                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Cửa Hàng</h4>
+                <div class="product-grid" id="product-list">
+                    <!-- Products will render here -->
+                </div>
+            </div>
+            
+            <div class="card">
+                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Đơn hàng của tôi</h4>
+                <div id="order-list" style="margin-top: 15px;">
+                    <!-- Orders will render here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Cart -->
+        <div>
+            <div class="card mb-4" style="background-color: #fcfcfc;">
+                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Giỏ hàng</h4>
+                <div id="cart-items" style="margin-top: 15px;">
+                    <!-- Cart items will render here -->
+                </div>
+                <div class="cart-total" id="cart-total">Tổng: 0 đ</div>
+                
+                <div style="margin-top: 20px;">
+                    <input type="text" id="shipping-address" class="form-control mb-2" placeholder="Nhập địa chỉ giao hàng">
+                    <button class="btn btn-success" id="btn-checkout" style="width: 100%;">Thanh toán / Đặt hàng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay: Enforce Profile Completion -->
+<div class="overlay" id="enforce-profile-overlay">
+    <div class="card" style="max-width: 450px;">
+        <h3 class="mb-2 text-danger text-center">Hoàn tất hồ sơ</h3>
+        <p class="text-muted text-center mb-4">Bạn cần bổ sung thông tin cá nhân để có thể mua hàng.</p>
+        
+        <form id="enforce-profile-form">
+            <div class="form-group">
+                <label class="form-label">Họ và tên</label>
+                <input type="text" id="enforce-name" class="form-control" required placeholder="Nhập họ tên của bạn">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Số điện thoại</label>
+                <input type="tel" id="enforce-phone" class="form-control" required placeholder="Ví dụ: 0987654321" pattern="^[0-9]{10}$" title="Vui lòng nhập đúng 10 chữ số">
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label">Địa chỉ</label>
+                <input type="text" id="enforce-address" class="form-control" required placeholder="Địa chỉ nhận hàng mặc định">
+            </div>
+            <button type="submit" class="btn btn-success" style="width: 100%;">Lưu thông tin</button>
+        </form>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
 <script>
-    const statusEl = document.getElementById("status");
-    const userInfoEl = document.getElementById("user-info");
-    const logoutBtn = document.getElementById("logout-btn");
+    document.addEventListener("DOMContentLoaded", () => {
+        App.saveTokenFromHash();
+        let currentUser = null;
 
-    function saveTokenFromHash() {
-        const hash = window.location.hash.startsWith("#")
-            ? window.location.hash.substring(1)
-            : "";
+        async function initUser() {
+            const token = App.getToken();
+            if (!token) return window.location.href = "/login.html";
 
-        const params = new URLSearchParams(hash);
-        const token = params.get("token");
+            try {
+                currentUser = await App.callApi("/auth/me");
+                if (currentUser.role === "ADMIN") return window.location.href = "/admin-dashboard.html";
+                
+                checkProfileCompletion();
 
-        if (token) {
-            localStorage.setItem("token", token);
-            history.replaceState(null, "", "/user-dashboard.html");
+            } catch (error) {
+                App.showStatus("status", error.message, false);
+                if (error.message.includes("Token")) setTimeout(() => App.logout(), 2000);
+            }
         }
-    }
 
-    function getToken() {
-        return localStorage.getItem("token");
-    }
+        function checkProfileCompletion() {
+            const u = currentUser;
+            const isProfileIncomplete = !u.name || !u.phoneNumber || !u.address;
 
-    async function callApi(url, options = {}) {
-        const token = getToken();
+            if (isProfileIncomplete) {
+                // Hiển thị Overlay bắt buộc cập nhật
+                document.getElementById("enforce-profile-overlay").classList.add("active");
+                document.getElementById("main-content").style.display = "none";
+            } else {
+                // Cho phép vào trang chính
+                document.getElementById("enforce-profile-overlay").classList.remove("active");
+                document.getElementById("main-content").style.display = "block";
+                
+                setupDashboard();
+            }
+        }
 
-        const response = await fetch(url, {
-            ...options,
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token
+        // Xử lý Form trong Overlay bắt buộc
+        document.getElementById("enforce-profile-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById("enforce-name").value.trim(),
+                phoneNumber: document.getElementById("enforce-phone").value.trim(),
+                address: document.getElementById("enforce-address").value.trim()
+            };
+
+            try {
+                currentUser = await App.callApi("/auth/me", {
+                    method: "PUT",
+                    body: JSON.stringify(payload)
+                });
+                alert("Cập nhật thông tin thành công!");
+                checkProfileCompletion(); // Kiểm tra lại và hiển thị Dashboard
+            } catch (error) {
+                alert(error.message);
             }
         });
 
-        const result = await response.json();
 
-        if (!response.ok || !result.success) {
-            throw new Error(result.message || "Gọi API thất bại");
-        }
-
-        return result.data;
-    }
-
-    async function loadUser() {
-        const token = getToken();
-
-        if (!token) {
-            window.location.href = "/login.html";
-            return;
-        }
-
-        try {
-            const user = await callApi("/auth/me");
-
-            if (user.role === "ADMIN") {
-                window.location.href = "/admin-dashboard.html";
-                return;
+        // ================= MAIN DASHBOARD LOGIC =================
+        async function setupDashboard() {
+            document.getElementById("user-name").textContent = "Xin chào, " + currentUser.name;
+            document.getElementById("status").style.display = 'none';
+            
+            if (currentUser.address) {
+                document.getElementById("shipping-address").value = currentUser.address;
             }
 
-            userInfoEl.innerHTML = `
-                <p><b>ID:</b> ${user.id}</p>
-                <p><b>Tên:</b> ${user.name}</p>
-                <p><b>Email:</b> ${user.email}</p>
-                <p><b>Role:</b> ${user.role}</p>
-                <p><b>Provider:</b> ${user.provider}</p>
-            `;
-
-            statusEl.textContent = "Tải thông tin người dùng thành công";
-        } catch (error) {
-            statusEl.textContent = error.message;
+            await loadProducts();
+            await loadCart();
+            await loadOrders();
         }
-    }
 
-    logoutBtn.addEventListener("click", () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login.html";
+        // ================= STORE LOGIC =================
+        async function loadProducts() {
+            try {
+                const response = await App.callApi("/products?size=50&status=ACTIVE"); 
+                const items = response.content || response; 
+                
+                const container = document.getElementById("product-list");
+                if (!items || items.length === 0) {
+                    container.innerHTML = "<p class='text-muted'>Chưa có sản phẩm nào.</p>";
+                    return;
+                }
+
+                container.innerHTML = items.map(p => `
+                    <div class="product-card">
+                        <img src="${p.imageUrl || 'https://via.placeholder.com/150?text=No+Image'}" alt="${p.name}">
+                        <div style="font-weight: 600; margin-bottom: 5px;">${p.name}</div>
+                        <div class="text-danger" style="font-weight: bold; margin-bottom: 10px;">${p.price.toLocaleString('vi-VN')} đ</div>
+                        <button class="btn btn-outline btn-sm" onclick="addToCart(${p.id})">Thêm vào giỏ</button>
+                    </div>
+                `).join("");
+            } catch (error) { console.error("Lỗi tải sản phẩm:", error); }
+        }
+
+        // ================= CART LOGIC =================
+        async function loadCart() {
+            try {
+                const cart = await App.callApi("/cart");
+                const container = document.getElementById("cart-items");
+                const totalEl = document.getElementById("cart-total");
+
+                if (!cart || !cart.items || cart.items.length === 0) {
+                    container.innerHTML = "<p class='text-muted text-center'>Giỏ hàng trống.</p>";
+                    totalEl.textContent = "Tổng: 0 đ";
+                    return;
+                }
+
+                container.innerHTML = cart.items.map(item => `
+                    <div class="cart-item">
+                        <div>
+                            <div><strong>${item.productName}</strong></div>
+                            <div class="text-muted" style="font-size: 0.85rem;">${item.price.toLocaleString('vi-VN')} đ x ${item.quantity}</div>
+                        </div>
+                        <button class="btn btn-danger btn-sm" style="padding: 4px 8px;" onclick="removeFromCart(${item.id})">&times;</button>
+                    </div>
+                `).join("");
+
+                totalEl.textContent = `Tổng: ${cart.totalPrice.toLocaleString('vi-VN')} đ`;
+            } catch (error) { console.error("Lỗi tải giỏ hàng:", error); }
+        }
+
+        window.addToCart = async (productId) => {
+            try {
+                await App.callApi("/cart/items", {
+                    method: "POST",
+                    body: JSON.stringify({ productId: productId, quantity: 1 })
+                });
+                alert("Đã thêm vào giỏ!");
+                loadCart();
+            } catch (error) { alert(error.message); }
+        };
+
+        window.removeFromCart = async (cartItemId) => {
+            try {
+                await App.callApi(`/cart/items/${cartItemId}`, { method: "DELETE" });
+                loadCart();
+            } catch (error) { alert(error.message); }
+        };
+
+        document.getElementById("btn-checkout").addEventListener("click", async () => {
+            const address = document.getElementById("shipping-address").value.trim();
+            if (!address) return alert("Vui lòng nhập địa chỉ giao hàng!");
+
+            try {
+                await App.callApi("/orders", {
+                    method: "POST",
+                    body: JSON.stringify({ shippingAddress: address })
+                });
+                alert("Đặt hàng thành công!");
+                loadCart();
+                loadOrders();
+            } catch (error) { alert(error.message); }
+        });
+
+        // ================= ORDER LOGIC =================
+        async function loadOrders() {
+            try {
+                const orders = await App.callApi("/orders");
+                const container = document.getElementById("order-list");
+
+                if (!orders || orders.length === 0) {
+                    container.innerHTML = "<p class='text-muted'>Bạn chưa có đơn hàng nào.</p>";
+                    return;
+                }
+
+                container.innerHTML = orders.map(o => `
+                    <div class="order-card">
+                        <div class="flex-between mb-2">
+                            <strong>Đơn hàng #${o.id}</strong>
+                            <span class="badge ${o.status === 'PENDING' ? 'badge-primary' : (o.status === 'CANCELLED' ? 'badge-danger' : 'badge-success')}" style="background-color: ${o.status === 'CANCELLED' ? 'var(--danger-color)' : ''}">${o.status}</span>
+                        </div>
+                        <div class="text-muted" style="font-size: 0.9rem; margin-bottom: 5px;">Địa chỉ: ${o.shippingAddress}</div>
+                        <div class="text-danger" style="font-weight: bold; margin-bottom: 10px;">Tổng tiền: ${o.totalAmount.toLocaleString('vi-VN')} đ</div>
+                        ${o.status === 'PENDING' ? `<button class="btn btn-outline btn-sm text-danger" style="border-color: var(--danger-color);" onclick="cancelOrder(${o.id})">Hủy đơn hàng</button>` : ''}
+                    </div>
+                `).join("");
+            } catch (error) { console.error("Lỗi tải đơn hàng:", error); }
+        }
+
+        window.cancelOrder = async (orderId) => {
+            if(!confirm("Bạn có chắc muốn hủy đơn hàng này?")) return;
+            try {
+                await App.callApi(`/orders/${orderId}/cancel`, { method: "PUT" });
+                alert("Đã hủy đơn hàng!");
+                loadOrders();
+            } catch (error) { alert(error.message); }
+        };
+
+        initUser();
     });
-
-    saveTokenFromHash();
-    loadUser();
 </script>
 </body>
 </html>

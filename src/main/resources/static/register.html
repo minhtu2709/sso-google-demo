@@ -3,100 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng ký</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 420px;
-            margin: 60px auto;
-            padding: 20px;
-        }
-
-        h1 {
-            margin-bottom: 20px;
-        }
-
-        input, button, a {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            box-sizing: border-box;
-        }
-
-        a {
-            display: block;
-            text-align: center;
-            text-decoration: none;
-            background: #eeeeee;
-            color: black;
-            border: 1px solid #cccccc;
-        }
-
-        #status {
-            margin-top: 12px;
-            color: red;
-            white-space: pre-line;
-        }
-    </style>
+    <title>Đăng ký - Commercial App</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<h1>Đăng ký</h1>
 
-<form id="register-form">
-    <input id="name" type="text" placeholder="Họ tên" required>
-    <input id="email" type="email" placeholder="Email" required>
-    <input id="password" type="password" placeholder="Mật khẩu" required>
-    <button type="submit">Tạo tài khoản</button>
-</form>
+<div class="auth-wrapper">
+    <div class="card auth-card">
+        <h2 class="text-center mb-4">Tạo Tài Khoản</h2>
 
-<a href="/login.html">Đã có tài khoản? Đăng nhập</a>
+        <form id="register-form">
+            <div class="form-group">
+                <label class="form-label" for="email">Email</label>
+                <input class="form-control" id="email" type="email" placeholder="Nhập email hợp lệ" required>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label class="form-label" for="password">Mật khẩu</label>
+                <input class="form-control" id="password" type="password" placeholder="Tạo mật khẩu (ít nhất 6 ký tự)" required minlength="6">
+            </div>
 
-<div id="status"></div>
+            <div class="form-group mb-4">
+                <label class="form-label" for="confirmPassword">Xác nhận mật khẩu</label>
+                <input class="form-control" id="confirmPassword" type="password" placeholder="Nhập lại mật khẩu" required minlength="6">
+            </div>
 
+            <button class="btn btn-primary mb-3" type="submit">Đăng ký ngay</button>
+        </form>
+
+        <div class="text-center mt-2">
+            <span class="text-muted">Đã có tài khoản?</span> <a href="/login.html">Đăng nhập</a>
+        </div>
+
+        <div id="status" class="status-message"></div>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
 <script>
-    const form = document.getElementById("register-form");
-    const statusEl = document.getElementById("status");
+    document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("register-form");
 
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        statusEl.textContent = "";
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            App.hideStatus("status");
 
-        const payload = {
-            name: document.getElementById("name").value.trim(),
-            email: document.getElementById("email").value.trim(),
-            password: document.getElementById("password").value
-        };
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
 
-        try {
-            const response = await fetch("/auth/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-
-            if (!response.ok || !result.success) {
-                if (result.data && typeof result.data === "object") {
-                    const errors = Object.values(result.data).join("\n");
-                    throw new Error(errors || result.message || "Đăng ký thất bại");
-                }
-
-                throw new Error(result.message || "Đăng ký thất bại");
+            if (password !== confirmPassword) {
+                App.showStatus("status", "Mật khẩu xác nhận không khớp!", false);
+                return;
             }
 
-            statusEl.style.color = "green";
-            statusEl.textContent = "Đăng ký thành công. Đang chuyển sang trang đăng nhập...";
+            const payload = {
+                email: document.getElementById("email").value.trim(),
+                password: password,
+                confirmPassword: confirmPassword
+            };
 
-            setTimeout(() => {
-                window.location.href = "/login.html";
-            }, 1200);
-        } catch (error) {
-            statusEl.style.color = "red";
-            statusEl.textContent = error.message;
-        }
+            try {
+                const response = await fetch("/auth/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    if (result.data && typeof result.data === "object") {
+                        const errors = Object.values(result.data).join("\n");
+                        throw new Error(errors || result.message || "Đăng ký thất bại");
+                    }
+                    throw new Error(result.message || "Đăng ký thất bại");
+                }
+
+                App.showStatus("status", "Đăng ký thành công! Đang chuyển sang trang đăng nhập...", true);
+
+                setTimeout(() => {
+                    window.location.href = "/login.html";
+                }, 1500);
+            } catch (error) {
+                App.showStatus("status", error.message, false);
+            }
+        });
     });
 </script>
 </body>
