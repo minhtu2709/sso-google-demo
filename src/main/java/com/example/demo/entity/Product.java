@@ -29,9 +29,12 @@ public class Product {
     @Column(nullable = false)
     private Integer stock;
 
+    @Column(length = 1000)
     private String imageUrl;
 
     private String status;
+
+    private boolean deleted = false;
 
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)

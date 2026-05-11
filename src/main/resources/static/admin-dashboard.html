@@ -6,26 +6,81 @@
     <title>Trang Quản Trị - Commercial App</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        .flex-between {
+        :root {
+            --sidebar-width: 250px;
+        }
+        .hidden { display: none !important; }
+
+        /* Layout */
+        .admin-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #2c3e50;
+            color: white;
+            padding-top: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            padding: 0 20px 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 10px;
+            color: var(--danger-color);
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+        }
+        .sidebar-menu li {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-menu li:hover, .sidebar-menu li.active {
+            background: rgba(255,255,255,0.1);
+            border-left: 4px solid var(--danger-color);
+        }
+        #sidebar-user-profile:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 20px;
+            background: var(--bg-color);
+        }
+
+        .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-        .section-title {
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
             margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
         }
-        .form-row {
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
         }
-        .form-row > .form-group {
-            flex: 1;
-            margin-bottom: 0;
-        }
-        /* Overlay bắt buộc cập nhật hồ sơ */
+        .stat-card h3 { font-size: 2rem; color: var(--primary-color); }
+
         .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -42,147 +97,244 @@
             visibility: visible;
             opacity: 1;
         }
+
+        /* Toast Notification */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+        .toast {
+            padding: 12px 20px;
+            border-radius: var(--border-radius-md);
+            margin-bottom: 10px;
+            color: white;
+            box-shadow: var(--shadow-md);
+            animation: slideIn 0.3s ease-out;
+            min-width: 200px;
+        }
+        .toast.success { background-color: var(--success-color); }
+        .toast.error { background-color: var(--danger-color); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
-<nav class="navbar" style="border-bottom: 3px solid var(--danger-color);">
-    <div class="container">
-        <div class="navbar-brand text-danger">Admin Panel</div>
-        <div class="navbar-nav">
-            <span id="admin-name" class="text-muted" style="margin-right: 15px; font-weight: 500;"></span>
-            <a href="/profile.html" class="btn btn-primary btn-sm">Cập nhật thông tin</a>
-            <a href="/change-password.html" class="btn btn-outline btn-sm" id="admin-change-pwd-btn">Đổi mật khẩu</a>
-            <button class="btn btn-outline btn-sm logout-btn">Đăng xuất</button>
-        </div>
-    </div>
-</nav>
+<div id="toast-container"></div>
 
-<div class="container" id="main-content" style="max-width: 1400px; display: none;">
-    <div id="status" class="status-message mb-3">Đang tải...</div>
-    
-    <div class="grid-cards" style="grid-template-columns: 1fr 2fr;">
-        <!-- Left Column: Categories -->
-        <div>
-            <!-- Categories Section -->
-            <div class="card">
-                <h4 class="section-title">Quản lý Danh Mục</h4>
-            
-            <form id="category-form" class="mb-4">
-                <div class="form-group">
-                    <label class="form-label">Tên danh mục</label>
-                    <input type="text" id="cat-name" class="form-control" required>
+<div class="admin-wrapper">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-brand">Admin Panel</div>
+        <ul class="sidebar-menu">
+            <li onclick="switchSection('section-dashboard')" id="menu-dashboard" class="active">📊 Dashboard</li>
+            <li onclick="switchSection('section-categories')" id="menu-categories">📁 Danh mục</li>
+            <li onclick="switchSection('section-products')" id="menu-products">📦 Sản phẩm</li>
+            <li onclick="switchSection('section-orders')" id="menu-orders">📜 Đơn hàng</li>
+            <li onclick="switchSection('section-users')" id="menu-users">👥 Người dùng</li>
+        </ul>
+        <div style="position: absolute; bottom: 20px; width: 100%; padding: 0 20px;">
+            <hr style="border: 0.5px solid rgba(255,255,255,0.1); margin-bottom: 15px;">
+            <div id="sidebar-user-profile" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px; border-radius: 8px; transition: background 0.3s;" onclick="if(confirm('Bạn muốn đăng xuất?')) App.logout()" title="Đăng xuất">
+                <img id="sidebar-avatar" src="https://via.placeholder.com/35" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.2);">
+                <div style="overflow: hidden;">
+                    <p id="sidebar-user-name" style="margin: 0; font-size: 0.85rem; font-weight: 500; white-space: nowrap; text-overflow: ellipsis;">Admin</p>
+                    <p style="margin: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5);">Đăng xuất</p>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Mô tả</label>
-                    <input type="text" id="cat-desc" class="form-control">
-                </div>
-                <button type="submit" class="btn btn-primary btn-sm">Thêm Danh Mục</button>
-            </form>
-
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Tên</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="category-list">
-                        <!-- Render dynamically -->
-                    </tbody>
-                </table>
             </div>
         </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Navbar in Main Content -->
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; gap: 15px;">
+            <span id="admin-name" class="text-muted" style="font-weight: 500;"></span>
+            <a href="/profile.html" class="btn btn-primary btn-sm">Hồ sơ</a>
         </div>
-        
-        <!-- Products Section -->
-        <div class="card" style="align-self: start;">
-            <h4 class="section-title">Quản lý Sản Phẩm</h4>
-            
-            <form id="product-form" class="mb-4">
-                <div class="form-row mb-3">
-                    <div class="form-group">
-                        <label class="form-label">Tên sản phẩm</label>
-                        <input type="text" id="prod-name" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Danh mục</label>
-                        <select id="prod-category" class="form-control" required>
-                            <option value="">Chọn danh mục...</option>
-                        </select>
-                    </div>
+
+        <div id="status" class="status-message mb-3">Đang tải dữ liệu...</div>
+
+        <!-- Section: Dashboard -->
+        <section id="section-dashboard" class="admin-section">
+            <div class="section-header">
+                <h2>Tổng quan hệ thống</h2>
+            </div>
+            <div class="grid-cards" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-card">
+                    <p class="text-muted">Tổng Sản Phẩm</p>
+                    <h3 id="stat-products">0</h3>
                 </div>
-                <div class="form-row mb-3">
-                    <div class="form-group">
-                        <label class="form-label">Giá</label>
-                        <input type="number" id="prod-price" class="form-control" min="1" required>
+                <div class="stat-card">
+                    <p class="text-muted">Đơn hàng mới</p>
+                    <h3 id="stat-orders">0</h3>
+                </div>
+                <div class="stat-card">
+                    <p class="text-muted">Người dùng</p>
+                    <h3 id="stat-users">0</h3>
+                </div>
+                <div class="stat-card">
+                    <p class="text-muted">Doanh thu</p>
+                    <h3 id="stat-revenue">0đ</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Categories -->
+        <section id="section-categories" class="admin-section hidden">
+            <div class="section-header">
+                <h2>Quản lý Danh Mục</h2>
+            </div>
+            <div class="card mb-4">
+                <form id="category-form" style="display: flex; gap: 10px; align-items: flex-end;">
+                    <input type="hidden" id="cat-id">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label class="form-label" id="cat-form-title">Thêm danh mục mới</label>
+                        <input type="text" id="cat-name" class="form-control" placeholder="Tên danh mục" required>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Tồn kho</label>
-                        <input type="number" id="prod-stock" class="form-control" min="0" required>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label class="form-label">&nbsp;</label>
+                        <input type="text" id="cat-desc" class="form-control" placeholder="Mô tả">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Trạng thái</label>
-                        <select id="prod-status" class="form-control">
-                            <option value="ACTIVE">ACTIVE</option>
-                            <option value="INACTIVE">INACTIVE</option>
-                        </select>
+                    <div style="display: flex; gap: 5px;">
+                        <button type="submit" class="btn btn-primary" style="width: auto;" id="btn-save-cat">Thêm</button>
+                        <button type="button" class="btn btn-outline hidden" style="width: auto;" id="btn-cancel-cat" onclick="resetCategoryForm()">Hủy</button>
                     </div>
+                </form>
+            </div>
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr><th>ID</th><th>Tên danh mục</th><th>Mô tả</th><th style="text-align: right;">Thao tác</th></tr>
+                        </thead>
+                        <tbody id="category-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Products -->
+        <section id="section-products" class="admin-section hidden">
+            <div class="section-header">
+                <h2>Quản lý Sản Phẩm</h2>
+                <button class="btn btn-success btn-sm" onclick="openProductModal()">+ Thêm Sản Phẩm</button>
+            </div>
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr><th>ID</th><th>Tên SP</th><th>Danh Mục</th><th>Giá</th><th>Kho</th><th>Status</th><th>Thao tác</th></tr>
+                        </thead>
+                        <tbody id="product-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Orders -->
+        <section id="section-orders" class="admin-section hidden">
+            <div class="section-header">
+                <h2>Quản lý Đơn Hàng</h2>
+            </div>
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Khách hàng</th>
+                                <th>Tổng tiền</th>
+                                <th>Ngày đặt</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-order-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Users -->
+        <section id="section-users" class="admin-section hidden">
+            <div class="section-header">
+                <h2>Quản lý Người Dùng</h2>
+                <div style="width: 300px;">
+                    <input type="text" id="user-search" class="form-control" placeholder="Tìm kiếm user..." oninput="filterUsers()">
+                </div>
+            </div>
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr><th>ID</th><th>Avatar</th><th>Họ Tên</th><th>Email</th><th>SĐT</th><th>Quyền</th><th>Thao tác</th></tr>
+                        </thead>
+                        <tbody id="user-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Modal: Product (Add/Edit) -->
+<div class="overlay" id="product-overlay" onclick="if(event.target === this) closeProductModal()">
+    <div class="card" style="max-width: 600px; position: relative; max-height: 90vh; overflow-y: auto;">
+        <button type="button" onclick="closeProductModal()" style="position: absolute; top: 15px; right: 20px; border: none; background: none; font-size: 1.5rem; cursor: pointer; color: var(--text-light);">&times;</button>
+        <h3 class="mb-3 text-center" id="prod-modal-title">Thêm Sản Phẩm</h3>
+        <form id="product-form">
+            <input type="hidden" id="prod-id">
+            <div class="form-row mb-3">
+                <div class="form-group">
+                    <label class="form-label">Tên sản phẩm</label>
+                    <input type="text" id="prod-name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Danh mục</label>
+                    <select id="prod-category" class="form-control" required></select>
+                </div>
+            </div>
+            <div class="form-row mb-3">
+                <div class="form-group">
+                    <label class="form-label">Giá</label>
+                    <input type="number" id="prod-price" class="form-control" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tồn kho</label>
+                    <input type="number" id="prod-stock" class="form-control" min="0" required>
+                </div>
+            </div>
+            <div class="form-row mb-3">
+                <div class="form-group">
+                    <label class="form-label">Trạng thái</label>
+                    <select id="prod-status" class="form-control">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Hình ảnh URL</label>
                     <input type="text" id="prod-image" class="form-control" placeholder="https://...">
                 </div>
-                <button type="submit" class="btn btn-success btn-sm mt-2">Thêm Sản Phẩm</button>
-            </form>
-
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Tên SP</th>
-                            <th>Danh Mục</th>
-                            <th>Giá</th>
-                            <th>Kho</th>
-                            <th>Status</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="product-list">
-                        <!-- Render dynamically -->
-                    </tbody>
-                </table>
             </div>
-        </div>
-        <!-- User Management Section -->
-        <div class="card" style="grid-column: 1 / -1; margin-top: 20px;">
-            <h4 class="section-title">Quản lý Người Dùng</h4>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Avatar</th>
-                            <th>Họ Tên</th>
-                            <th>Email</th>
-                            <th>SĐT</th>
-                            <th>Quyền</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="user-list">
-                        <!-- Render dynamically -->
-                    </tbody>
-                </table>
+            <div class="form-group mb-4">
+                <label class="form-label">Mô tả</label>
+                <textarea id="prod-desc" class="form-control" rows="3"></textarea>
             </div>
-        </div>
+            <div class="flex-between">
+                <button type="button" class="btn btn-outline" onclick="closeProductModal()">Hủy</button>
+                <button type="submit" class="btn btn-primary" id="btn-save-prod">Lưu sản phẩm</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<!-- Modal Update User Info -->
+<!-- Modal: Edit User -->
 <div class="overlay" id="edit-user-overlay">
     <div class="card" style="max-width: 450px;">
         <h3 class="mb-3 text-center">Cập nhật User</h3>
@@ -215,7 +367,7 @@
     </div>
 </div>
 
-<!-- Modal Update User Password -->
+<!-- Modal: Password -->
 <div class="overlay" id="pwd-user-overlay">
     <div class="card" style="max-width: 450px;">
         <h3 class="mb-3 text-center text-danger">Đặt lại mật khẩu</h3>
@@ -233,205 +385,338 @@
     </div>
 </div>
 
-<!-- Overlay: Enforce Profile Completion -->
-<div class="overlay" id="enforce-profile-overlay">
-    <div class="card" style="max-width: 450px;">
-        <h3 class="mb-2 text-danger text-center">Hoàn tất hồ sơ Quản Trị Viên</h3>
-        <p class="text-muted text-center mb-4">Xin vui lòng cập nhật thông tin tài khoản (Họ tên, SĐT) để tiếp tục.</p>
-        
-        <form id="enforce-profile-form">
-            <div class="form-group">
-                <label class="form-label">Họ và tên</label>
-                <input type="text" id="enforce-name" class="form-control" required placeholder="Nhập họ tên của bạn">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Số điện thoại</label>
-                <input type="tel" id="enforce-phone" class="form-control" required placeholder="Ví dụ: 0987654321" pattern="^[0-9]{10}$" title="Vui lòng nhập đúng 10 chữ số">
-            </div>
-            <div class="form-group mb-4">
-                <label class="form-label">Địa chỉ</label>
-                <input type="text" id="enforce-address" class="form-control" required placeholder="Địa chỉ cơ quan">
-            </div>
-            <button type="submit" class="btn btn-danger" style="width: 100%;">Lưu thông tin & Truy cập Admin Panel</button>
-        </form>
-    </div>
-</div>
-
 <script src="/js/app.js"></script>
 <script>
+    const UI = {
+        toast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        },
+        confirmRole(newRole) {
+            if (newRole === 'ADMIN') return confirm('Bạn có chắc muốn cấp quyền ADMIN cho user này?');
+            return true;
+        }
+    };
+
     document.addEventListener("DOMContentLoaded", () => {
         App.saveTokenFromHash();
-
-        let categories = [];
+        let categories = [], allUsers = [], allProducts = [], allOrders = [];
         let currentUser = null;
+
+        window.switchSection = (sectionId) => {
+            // Hide all sections
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
+            // Remove active class from all menu items
+            document.querySelectorAll('.sidebar-menu li').forEach(m => m.classList.remove('active'));
+
+            // Show target section
+            document.getElementById(sectionId).classList.remove('hidden');
+            // Set menu item as active
+            const menuId = sectionId.replace('section-', 'menu-');
+            document.getElementById(menuId).classList.add('active');
+        };
 
         async function initAdmin() {
             const token = App.getToken();
             if (!token) return window.location.href = "/login.html";
-
             try {
                 currentUser = await App.callApi("/auth/me");
                 if (currentUser.role !== "ADMIN") return window.location.href = "/user-dashboard.html";
-                
-                if (currentUser.provider !== "LOCAL") {
-                    const pwdBtn = document.getElementById("admin-change-pwd-btn");
-                    if (pwdBtn) pwdBtn.style.display = "none";
-                }
-                
-                checkProfileCompletion();
+                setupDashboard();
             } catch (error) {
                 App.showStatus("status", error.message, false);
                 if (error.message.includes("Token")) setTimeout(() => App.logout(), 2000);
             }
         }
 
-        function checkProfileCompletion() {
-            const u = currentUser;
-            const isProfileIncomplete = !u.name || !u.phoneNumber || !u.address;
-
-            if (isProfileIncomplete) {
-                document.getElementById("enforce-profile-overlay").classList.add("active");
-                document.getElementById("main-content").style.display = "none";
-                
-                // Pre-fill if some data exists
-                document.getElementById("enforce-name").value = u.name || '';
-                document.getElementById("enforce-phone").value = u.phoneNumber || '';
-                document.getElementById("enforce-address").value = u.address || '';
-            } else {
-                document.getElementById("enforce-profile-overlay").classList.remove("active");
-                document.getElementById("main-content").style.display = "block";
-                
-                setupDashboard();
-            }
-        }
-
-        // Xử lý Form trong Overlay
-        document.getElementById("enforce-profile-form").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const payload = {
-                name: document.getElementById("enforce-name").value.trim(),
-                phoneNumber: document.getElementById("enforce-phone").value.trim(),
-                address: document.getElementById("enforce-address").value.trim()
-            };
-
-            try {
-                currentUser = await App.callApi("/auth/me", {
-                    method: "PUT",
-                    body: JSON.stringify(payload)
-                });
-                alert("Cập nhật thông tin thành công!");
-                checkProfileCompletion();
-            } catch (error) {
-                alert(error.message);
-            }
-        });
-
         async function setupDashboard() {
-            document.getElementById("admin-name").textContent = "Xin chào, " + currentUser.name;
-            document.getElementById("status").style.display = 'none';
+            document.getElementById("admin-name").textContent = "Xin chào, " + (currentUser.name || "Admin");
+            document.getElementById("sidebar-user-name").textContent = currentUser.name || "Admin";
+            if (currentUser.avatarUrl) {
+                document.getElementById("sidebar-avatar").src = currentUser.avatarUrl;
+            }
+            document.getElementById("status").style.display = "none";
+            // No longer hiding main-content as it's part of the new layout
 
-            await loadCategories();
-            await loadProducts();
+            await Promise.all([
+                loadCategories(),
+                loadProducts(),
+                loadUsers(),
+                loadOrders()
+            ]);
+            updateStats();
         }
 
-        // ================= CATEGORY LOGIC =================
+        function updateStats() {
+            document.getElementById("stat-products").textContent = allProducts.length;
+            document.getElementById("stat-orders").textContent = allOrders.filter(o => o.status === 'PENDING').length;
+            document.getElementById("stat-users").textContent = allUsers.length;
+            const revenue = allOrders.filter(o => o.status === 'DONE').reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+            document.getElementById("stat-revenue").textContent = revenue.toLocaleString() + 'đ';
+        }
+
+        // --- Categories ---
         async function loadCategories() {
             try {
                 categories = await App.callApi("/categories");
-                
-                const tbody = document.getElementById("category-list");
-                tbody.innerHTML = categories.map(c => `
+                document.getElementById("category-list").innerHTML = categories.map(c => `
                     <tr>
                         <td>${c.id}</td>
-                        <td>${c.name}</td>
-                        <td><button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id})">Xóa</button></td>
+                        <td style="font-weight: 500;">${c.name}</td>
+                        <td class="text-muted">${c.description || '—'}</td>
+                        <td style="text-align: right;">
+                            <button class="btn btn-outline btn-sm" onclick="editCategory(${c.id})" title="Sửa">✏️</button>
+                            <button class="btn btn-outline btn-sm text-danger" onclick="deleteCategory(${c.id})" title="Xóa">🗑️</button>
+                        </td>
                     </tr>
                 `).join("");
-
-                const select = document.getElementById("prod-category");
-                select.innerHTML = '<option value="">Chọn danh mục...</option>' + 
+                document.getElementById("prod-category").innerHTML = '<option value="">Chọn danh mục...</option>' +
                     categories.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
-            } catch (error) {
-                console.error(error);
-                alert("Lỗi tải danh mục: " + error.message);
-            }
+            } catch (e) {}
         }
+
+        window.editCategory = (id) => {
+            const c = categories.find(x => x.id === id);
+            if (c) {
+                document.getElementById("cat-id").value = c.id;
+                document.getElementById("cat-name").value = c.name;
+                document.getElementById("cat-desc").value = c.description || "";
+                document.getElementById("cat-form-title").textContent = "Sửa danh mục: " + c.name;
+                document.getElementById("btn-save-cat").textContent = "Lưu";
+                document.getElementById("btn-cancel-cat").classList.remove("hidden");
+                // Focus vào input tên
+                document.getElementById("cat-name").focus();
+            }
+        };
+
+        window.resetCategoryForm = () => {
+            document.getElementById("category-form").reset();
+            document.getElementById("cat-id").value = "";
+            document.getElementById("cat-form-title").textContent = "Thêm danh mục mới";
+            document.getElementById("btn-save-cat").textContent = "Thêm";
+            document.getElementById("btn-cancel-cat").classList.add("hidden");
+        };
 
         document.getElementById("category-form").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const name = document.getElementById("cat-name").value;
-            const description = document.getElementById("cat-desc").value;
+            const id = document.getElementById("cat-id").value;
+            const payload = {
+                name: document.getElementById("cat-name").value,
+                description: document.getElementById("cat-desc").value
+            };
             try {
-                await App.callApi("/categories", {
-                    method: "POST",
-                    body: JSON.stringify({ name, description })
-                });
-                document.getElementById("category-form").reset();
-                loadCategories();
-            } catch (error) { alert(error.message); }
+                const method = id ? "PUT" : "POST";
+                const url = id ? `/categories/${id}` : "/categories";
+                await App.callApi(url, { method, body: JSON.stringify(payload) });
+                UI.toast(id ? "Đã cập nhật danh mục" : "Đã thêm danh mục");
+                resetCategoryForm(); loadCategories();
+            } catch (error) { UI.toast(error.message, 'error'); }
         });
 
         window.deleteCategory = async (id) => {
-            if(!confirm("Bạn có chắc muốn xóa danh mục này?")) return;
-            try {
-                await App.callApi(`/categories/${id}`, { method: "DELETE" });
-                loadCategories();
-            } catch (error) { alert(error.message); }
+            if(!confirm("Xóa danh mục này?")) return;
+            try { await App.callApi(`/categories/${id}`, { method: "DELETE" }); UI.toast("Đã xóa"); loadCategories(); } catch (error) { UI.toast(error.message, 'error'); }
         };
 
-        // ================= PRODUCT LOGIC =================
+        // --- Products ---
+        window.openProductModal = (id = null) => {
+            const form = document.getElementById("product-form");
+            form.reset();
+            const prodId = id ? parseInt(id) : null;
+            document.getElementById("prod-id").value = prodId || "";
+            document.getElementById("prod-modal-title").textContent = prodId ? "✏️ Sửa Sản Phẩm" : "➕ Thêm Sản Phẩm";
+            document.getElementById("btn-save-prod").textContent = prodId ? "Xác nhận cập nhật" : "Thêm sản phẩm";
+
+            // Đổi màu nút cho dễ phân biệt
+            const btn = document.getElementById("btn-save-prod");
+            btn.className = prodId ? "btn btn-warning" : "btn btn-primary";
+
+            if (prodId) {
+                const p = allProducts.find(x => x.id === prodId);
+                if (p) {
+                    document.getElementById("prod-name").value = p.name || "";
+                    document.getElementById("prod-category").value = p.category?.id || "";
+                    document.getElementById("prod-price").value = p.price || 0;
+                    document.getElementById("prod-stock").value = p.stock || 0;
+                    document.getElementById("prod-status").value = p.status || "ACTIVE";
+                    document.getElementById("prod-image").value = p.imageUrl || "";
+                    document.getElementById("prod-desc").value = p.description || "";
+                }
+            }
+            document.getElementById("product-overlay").classList.add("active");
+        };
+
+        window.closeProductModal = () => document.getElementById("product-overlay").classList.remove("active");
+
         async function loadProducts() {
             try {
-                const response = await App.callApi("/products?size=50"); 
-                const products = response;
-                const items = products.content || products;
-                
-                const tbody = document.getElementById("product-list");
-                tbody.innerHTML = items.map(p => `
+                const res = await App.callApi("/products?size=100");
+                allProducts = res.items || [];
+                document.getElementById("product-list").innerHTML = allProducts.map(p => `
                     <tr>
-                        <td>${p.id}</td>
-                        <td>${p.name}</td>
-                        <td>${p.categoryName}</td>
-                        <td>${p.price.toLocaleString('vi-VN')} đ</td>
-                        <td>${p.stock}</td>
-                        <td><span class="badge ${p.status === 'ACTIVE' ? 'badge-success' : 'badge-primary'}">${p.status}</span></td>
-                        <td><button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Xóa</button></td>
+                        <td>${p.id}</td><td>${p.name}</td><td>${p.category?.name || '—'}</td><td>${(p.price || 0).toLocaleString()}đ</td><td>${p.stock}</td>
+                        <td><span class="badge ${p.status==='ACTIVE'?'badge-success':'badge-primary'}">${p.status}</span></td>
+                        <td style="text-align: right;">
+                            <button class="btn btn-outline btn-sm" onclick="openProductModal(${p.id})" title="Sửa">✏️</button>
+                            <button class="btn btn-outline btn-sm text-danger" onclick="deleteProduct(${p.id})" title="Xóa">🗑️</button>
+                        </td>
                     </tr>
                 `).join("");
-            } catch (error) {
-                console.error(error);
-                alert("Lỗi tải sản phẩm: " + error.message);
-            }
+            } catch (e) {}
         }
 
         document.getElementById("product-form").addEventListener("submit", async (e) => {
             e.preventDefault();
+            const id = document.getElementById("prod-id").value;
+
+            // Validate
+            const price = parseFloat(document.getElementById("prod-price").value);
+            const stock = parseInt(document.getElementById("prod-stock").value);
+            const catId = document.getElementById("prod-category").value;
+
+            if (!catId) { UI.toast("Vui lòng chọn danh mục", "error"); return; }
+            if (price <= 0) { UI.toast("Giá phải lớn hơn 0", "error"); return; }
+            if (stock < 0) { UI.toast("Tồn kho không được âm", "error"); return; }
+
+            // Confirm khi sửa
+            if (id && !confirm("Xác nhận cập nhật sản phẩm này?")) return;
+
             const payload = {
-                name: document.getElementById("prod-name").value,
-                categoryId: parseInt(document.getElementById("prod-category").value),
-                price: parseFloat(document.getElementById("prod-price").value),
-                stock: parseInt(document.getElementById("prod-stock").value),
+                name: document.getElementById("prod-name").value.trim(),
+                categoryId: parseInt(catId),
+                price,
+                stock,
                 status: document.getElementById("prod-status").value,
-                imageUrl: document.getElementById("prod-image").value || null
+                imageUrl: document.getElementById("prod-image").value.trim() || null,
+                description: document.getElementById("prod-desc").value.trim()
             };
 
+            const btn = document.getElementById("btn-save-prod");
+            btn.disabled = true;
+
             try {
-                await App.callApi("/products", {
-                    method: "POST",
-                    body: JSON.stringify(payload)
-                });
-                document.getElementById("product-form").reset();
-                loadProducts();
-            } catch (error) { alert(error.message); }
+                const method = id ? "PUT" : "POST";
+                const url = id ? `/products/${id}` : "/products";
+                await App.callApi(url, { method, body: JSON.stringify(payload) });
+                UI.toast(id ? "Cập nhật thành công!" : "Thêm sản phẩm thành công!");
+                closeProductModal(); loadProducts(); updateStats();
+            } catch (error) { UI.toast(error.message, 'error'); }
+            finally { btn.disabled = false; }
         });
 
         window.deleteProduct = async (id) => {
-            if(!confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
-            try {
-                await App.callApi(`/products/${id}`, { method: "DELETE" });
-                loadProducts();
-            } catch (error) { alert(error.message); }
+            if(!confirm("Xóa sản phẩm này?")) return;
+            try { await App.callApi(`/products/${id}`, { method: "DELETE" }); UI.toast("Đã xóa"); loadProducts(); updateStats(); } catch (error) { UI.toast(error.message, 'error'); }
         };
+
+        // --- Orders ---
+        async function loadOrders() {
+            try {
+                allOrders = await App.callApi("/admin/orders");
+                renderOrders(allOrders);
+                updateStats();
+            } catch (e) {}
+        }
+
+        function renderOrders(orders) {
+            document.getElementById("admin-order-list").innerHTML = orders.map(o => `
+                <tr>
+                    <td>#${o.id}</td><td>${o.customerName || 'Khách'}</td><td>${(o.totalPrice || 0).toLocaleString()}đ</td>
+                    <td>${new Date(o.createdAt).toLocaleDateString()}</td>
+                    <td><span class="badge ${o.status==='DONE'?'badge-success':'badge-primary'}">${o.status}</span></td>
+                    <td>
+                        <select onchange="updateOrderStatus(${o.id}, this.value, this)" class="form-control btn-sm" style="width: auto; display: inline-block;">
+                            <option value="PENDING" ${o.status==='PENDING'?'selected':''}>PENDING</option>
+                            <option value="CONFIRMED" ${o.status==='CONFIRMED'?'selected':''}>CONFIRMED</option>
+                            <option value="SHIPPING" ${o.status==='SHIPPING'?'selected':''}>SHIPPING</option>
+                            <option value="DONE" ${o.status==='DONE'?'selected':''}>DONE</option>
+                            <option value="CANCELLED" ${o.status==='CANCELLED'?'selected':''}>CANCEL</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        window.updateOrderStatus = async (id, status, selectEl) => {
+            if (!confirm(`Xác nhận chuyển sang "${status}"?`)) {
+                loadOrders();
+                return;
+            }
+            try {
+                await App.callApi(`/admin/orders/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) });
+                UI.toast("Đã cập nhật trạng thái");
+                loadOrders();
+            } catch (error) { UI.toast(error.message, 'error'); loadOrders(); }
+        };
+
+        // --- Users ---
+        async function loadUsers() {
+            try {
+                allUsers = await App.callApi("/admin/users");
+                renderUsers(allUsers);
+                updateStats();
+            } catch (e) {}
+        }
+
+        function renderUsers(users) {
+            document.getElementById("user-list").innerHTML = users.map(u => `
+                <tr>
+                    <td>${u.id}</td><td><img src="${u.avatarUrl || 'https://via.placeholder.com/30'}" style="width: 30px; height: 30px; border-radius: 50%;"></td>
+                    <td>${u.name || '—'}</td><td>${u.email}</td><td>${u.phoneNumber || '—'}</td>
+                    <td><span class="badge ${u.role==='ADMIN'?'badge-danger':'badge-primary'}">${u.role}</span></td>
+                    <td style="text-align: right;">
+                        <button class="btn btn-outline btn-sm" onclick="handleEditUser(${u.id})" title="Sửa">✏️</button>
+                        <button class="btn btn-outline btn-sm text-danger" onclick="openPwdUserOverlay(${u.id})" title="Đổi mật khẩu">🔑</button>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        window.filterUsers = () => {
+            const q = document.getElementById('user-search').value.toLowerCase();
+            renderUsers(allUsers.filter(u => u.email.toLowerCase().includes(q) || (u.name && u.name.toLowerCase().includes(q))));
+        };
+
+        window.handleEditUser = (id) => {
+            const u = allUsers.find(user => user.id === id);
+            if (u) {
+                document.getElementById("edit-user-id").value = u.id;
+                document.getElementById("admin-edit-name").value = u.name || '';
+                document.getElementById("admin-edit-phone").value = u.phoneNumber || '';
+                document.getElementById("admin-edit-address").value = u.address || '';
+                document.getElementById("admin-edit-role").value = u.role;
+                document.getElementById("edit-user-overlay").classList.add("active");
+            }
+        };
+
+        window.closeEditUserOverlay = () => document.getElementById("edit-user-overlay").classList.remove("active");
+
+        document.getElementById("edit-user-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const id = document.getElementById("edit-user-id").value;
+            const newRole = document.getElementById("admin-edit-role").value;
+            if (!UI.confirmRole(newRole)) return;
+
+            try {
+                await App.callApi(`/admin/users/${id}`, { method: "PUT", body: JSON.stringify({ name: document.getElementById("admin-edit-name").value, phoneNumber: document.getElementById("admin-edit-phone").value, address: document.getElementById("admin-edit-address").value }) });
+                await App.callApi(`/admin/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role: newRole }) });
+                UI.toast("Cập nhật thành công"); closeEditUserOverlay(); loadUsers();
+            } catch (error) { UI.toast(error.message, 'error'); }
+        });
+
+        window.openPwdUserOverlay = (id) => { document.getElementById("pwd-user-id").value = id; document.getElementById("pwd-user-overlay").classList.add("active"); };
+        window.closePwdUserOverlay = () => { document.getElementById("pwd-user-overlay").classList.remove("active"); document.getElementById("pwd-user-form").reset(); };
+        document.getElementById("pwd-user-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            try {
+                await App.callApi(`/admin/users/${document.getElementById("pwd-user-id").value}/password`, { method: "PUT", body: JSON.stringify({ newPassword: document.getElementById("admin-edit-pwd").value }) });
+                UI.toast("Đã đổi mật khẩu"); closePwdUserOverlay();
+            } catch (error) { UI.toast(error.message, 'error'); }
+        });
 
         initAdmin();
     });

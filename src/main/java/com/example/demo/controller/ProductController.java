@@ -32,7 +32,7 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ProductResponse>>> getAllProducts(
+    public ResponseEntity<ApiResponse<PageResult<ProductResponse>>> getAllProducts(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) BigDecimal minPrice,
@@ -47,9 +47,7 @@ public class ProductController {
                 keyword, categoryId, minPrice, maxPrice, status, page, size, sortBy, sortDir
         );
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Thành công", response.getItems(), response.getMetadata())
-        );
+        return ResponseEntity.ok(ApiResponse.success("Thành công", response));
     }
 
     @GetMapping("/{id}")
@@ -74,7 +72,7 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<ProductResponse>>> searchProducts(
+    public ResponseEntity<ApiResponse<PageResult<ProductResponse>>> searchProducts(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -85,8 +83,6 @@ public class ProductController {
                 keyword, page, size, sortBy, sortDir
         );
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Thành công", response.getItems(), response.getMetadata())
-        );
+        return ResponseEntity.ok(ApiResponse.success("Thành công", response));
     }
 }

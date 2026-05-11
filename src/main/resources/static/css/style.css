@@ -195,6 +195,24 @@ a:hover {
     color: var(--white);
 }
 
+.btn-success {
+    color: var(--white);
+    background-color: var(--success-color);
+}
+
+.btn-success:hover {
+    background-color: #21867a;
+}
+
+.btn-warning {
+    color: var(--white);
+    background-color: #f4a261;
+}
+
+.btn-warning:hover {
+    background-color: #e76f51;
+}
+
 .btn-outline {
     color: var(--text-color);
     background-color: var(--white);
@@ -244,7 +262,13 @@ a:hover {
     border-radius: var(--border-radius-sm);
     text-align: center;
     font-size: 0.9rem;
-    display: none; /* Hidden by default */
+    display: none;
+    background-color: #f8f9fa;
+    border: 1px solid var(--border-color);
+}
+
+.status-message.active {
+    display: block;
 }
 
 .status-message.error {

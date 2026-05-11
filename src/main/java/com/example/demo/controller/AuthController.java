@@ -85,7 +85,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Thành công", response));
     }
 
-    @PutMapping("/me")
+    @PutMapping("/profile")
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
             @AuthenticationPrincipal Object principal,
             @Valid @RequestBody ProfileUpdateRequest request) {

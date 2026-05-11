@@ -246,7 +246,7 @@
             };
 
             try {
-                currentUser = await App.callApi("/auth/me", {
+                currentUser = await App.callApi("/auth/profile", {
                     method: "PUT",
                     body: JSON.stringify(payload)
                 });

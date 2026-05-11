@@ -117,7 +117,7 @@ public class ProductService {
         product.setCategory(category);
 
         Product saved = productRepository.save(product);
-        log.info("Cập nhật danh mục thành công: {}", saved.getName());
+        log.info("Cập nhật sản phẩm thành công: {}", saved.getName());
 
         return ProductResponse.from(saved);
     }
@@ -127,8 +127,9 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
 
-        productRepository.delete(product);
-        log.info("Đã xóa sản phẩm ID: {}", id);
+        product.setDeleted(true);
+        productRepository.save(product);
+        log.info("Đã đánh dấu xóa sản phẩm ID: {}", id);
     }
 
     @Transactional(readOnly = true)
@@ -151,6 +152,9 @@ public class ProductService {
     ) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            // Chỉ lấy những sản phẩm chưa bị xóa
+            predicates.add(criteriaBuilder.equal(root.get("deleted"), false));
 
             if (keyword != null && !keyword.isBlank()) {
                 String normalizedKeyword = "%" + keyword.trim().toLowerCase() + "%";

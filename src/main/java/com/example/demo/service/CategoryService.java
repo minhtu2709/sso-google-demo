@@ -42,6 +42,25 @@ public class CategoryService {
     }
 
     @Transactional
+    public CategoryResponse updateCategory(Long id, CategoryRequest request) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục"));
+
+        // Kiểm tra tên trùng nếu đổi tên
+        if (!category.getName().equals(request.getName()) && categoryRepository.existsByName(request.getName())) {
+            throw new IllegalArgumentException("Tên danh mục đã tồn tại");
+        }
+
+        category.setName(request.getName());
+        category.setDescription(request.getDescription());
+
+        Category updated = categoryRepository.save(category);
+        log.info("Cập nhật danh mục thành công: {}", updated.getName());
+
+        return CategoryResponse.from(updated);
+    }
+
+    @Transactional
     public void deleteCategory(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục"));

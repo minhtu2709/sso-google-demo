@@ -143,4 +143,25 @@ public class OrderService {
 
         return OrderResponse.from(saved);
     }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAll().stream()
+                .map(OrderResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public OrderResponse updateStatus(Long orderId, String status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+
+        try {
+            Order.OrderStatus newStatus = Order.OrderStatus.valueOf(status);
+            order.setStatus(newStatus);
+            return OrderResponse.from(orderRepository.save(order));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái đơn hàng không hợp lệ: " + status);
+        }
+    }
 }

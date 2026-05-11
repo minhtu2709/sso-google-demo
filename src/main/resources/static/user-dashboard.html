@@ -6,6 +6,7 @@
     <title>Cửa hàng - Commercial App</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
+        .hidden { display: none !important; }
         .product-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -47,8 +48,6 @@
             margin-bottom: 10px;
             border-radius: var(--border-radius-sm);
         }
-
-        /* Overlay bắt buộc cập nhật hồ sơ */
         .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -65,6 +64,11 @@
             visibility: visible;
             opacity: 1;
         }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -80,40 +84,32 @@
     </div>
 </nav>
 
-<!-- Main Layout (Hidden until profile is complete) -->
-<div class="container" id="main-content" style="max-width: 1400px; display: none;">
-    <div id="status" class="status-message mb-3">Đang tải...</div>
-    
-    <div class="grid-cards" style="grid-template-columns: 2fr 1fr;">
-        <!-- Left Column: Store -->
-        <div>
-            <div class="card mb-4">
-                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Cửa Hàng</h4>
-                <div class="product-grid" id="product-list">
-                    <!-- Products will render here -->
-                </div>
-            </div>
-            
-            <div class="card">
-                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Đơn hàng của tôi</h4>
-                <div id="order-list" style="margin-top: 15px;">
-                    <!-- Orders will render here -->
-                </div>
-            </div>
-        </div>
+<div class="container" style="max-width: 1400px; margin-top: 20px;">
+    <div id="status" class="status-message mb-3" style="display: block;">Đang tải cửa hàng...</div>
 
-        <!-- Right Column: Cart -->
-        <div>
-            <div class="card mb-4" style="background-color: #fcfcfc;">
-                <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Giỏ hàng</h4>
-                <div id="cart-items" style="margin-top: 15px;">
-                    <!-- Cart items will render here -->
+    <div id="main-content" class="hidden">
+        <div class="grid-cards" style="grid-template-columns: 2fr 1fr;">
+            <!-- Store -->
+            <div>
+                <div class="card mb-4">
+                    <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Cửa Hàng</h4>
+                    <div class="product-grid" id="product-list"></div>
                 </div>
-                <div class="cart-total" id="cart-total">Tổng: 0 đ</div>
-                
-                <div style="margin-top: 20px;">
-                    <input type="text" id="shipping-address" class="form-control mb-2" placeholder="Nhập địa chỉ giao hàng">
-                    <button class="btn btn-success" id="btn-checkout" style="width: 100%;">Thanh toán / Đặt hàng</button>
+                <div class="card">
+                    <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Đơn hàng của tôi</h4>
+                    <div id="order-list" style="margin-top: 15px;"></div>
+                </div>
+            </div>
+            <!-- Cart -->
+            <div>
+                <div class="card mb-4" style="background-color: #fcfcfc;">
+                    <h4 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Giỏ hàng</h4>
+                    <div id="cart-items" style="margin-top: 15px;"></div>
+                    <div class="cart-total" id="cart-total">Tổng: 0 đ</div>
+                    <div style="margin-top: 20px;">
+                        <input type="text" id="shipping-address" class="form-control mb-2" placeholder="Nhập địa chỉ giao hàng">
+                        <button class="btn btn-success" id="btn-checkout" style="width: 100%;">Thanh toán / Đặt hàng</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -125,19 +121,18 @@
     <div class="card" style="max-width: 450px;">
         <h3 class="mb-2 text-danger text-center">Hoàn tất hồ sơ</h3>
         <p class="text-muted text-center mb-4">Bạn cần bổ sung thông tin cá nhân để có thể mua hàng.</p>
-        
         <form id="enforce-profile-form">
             <div class="form-group">
                 <label class="form-label">Họ và tên</label>
-                <input type="text" id="enforce-name" class="form-control" required placeholder="Nhập họ tên của bạn">
+                <input type="text" id="enforce-name" class="form-control" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Số điện thoại</label>
-                <input type="tel" id="enforce-phone" class="form-control" required placeholder="Ví dụ: 0987654321" pattern="^[0-9]{10}$" title="Vui lòng nhập đúng 10 chữ số">
+                <input type="tel" id="enforce-phone" class="form-control" required pattern="^[0-9]{10}$">
             </div>
             <div class="form-group mb-4">
                 <label class="form-label">Địa chỉ</label>
-                <input type="text" id="enforce-address" class="form-control" required placeholder="Địa chỉ nhận hàng mặc định">
+                <input type="text" id="enforce-address" class="form-control" required>
             </div>
             <button type="submit" class="btn btn-success" style="width: 100%;">Lưu thông tin</button>
         </form>
@@ -157,9 +152,7 @@
             try {
                 currentUser = await App.callApi("/auth/me");
                 if (currentUser.role === "ADMIN") return window.location.href = "/admin-dashboard.html";
-                
                 checkProfileCompletion();
-
             } catch (error) {
                 App.showStatus("status", error.message, false);
                 if (error.message.includes("Token")) setTimeout(() => App.logout(), 2000);
@@ -171,78 +164,52 @@
             const isProfileIncomplete = !u.name || !u.phoneNumber || !u.address;
 
             if (isProfileIncomplete) {
-                // Hiển thị Overlay bắt buộc cập nhật
                 document.getElementById("enforce-profile-overlay").classList.add("active");
-                document.getElementById("main-content").style.display = "none";
+                document.getElementById("main-content").classList.add("hidden");
             } else {
-                // Cho phép vào trang chính
                 document.getElementById("enforce-profile-overlay").classList.remove("active");
-                document.getElementById("main-content").style.display = "block";
-                
                 setupDashboard();
             }
         }
 
-        // Xử lý Form trong Overlay bắt buộc
-        document.getElementById("enforce-profile-form").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const payload = {
-                name: document.getElementById("enforce-name").value.trim(),
-                phoneNumber: document.getElementById("enforce-phone").value.trim(),
-                address: document.getElementById("enforce-address").value.trim()
-            };
-
-            try {
-                currentUser = await App.callApi("/auth/me", {
-                    method: "PUT",
-                    body: JSON.stringify(payload)
-                });
-                alert("Cập nhật thông tin thành công!");
-                checkProfileCompletion(); // Kiểm tra lại và hiển thị Dashboard
-            } catch (error) {
-                alert(error.message);
-            }
-        });
-
-
-        // ================= MAIN DASHBOARD LOGIC =================
         async function setupDashboard() {
-            document.getElementById("user-name").textContent = "Xin chào, " + currentUser.name;
-            document.getElementById("status").style.display = 'none';
+            document.getElementById("user-name").textContent = "Xin chào, " + (currentUser.name || "Người dùng");
             
-            if (currentUser.address) {
-                document.getElementById("shipping-address").value = currentUser.address;
-            }
+            // HIỆN DASHBOARD
+            document.getElementById("status").style.display = "none";
+            document.getElementById("main-content").classList.remove("hidden");
+            
+            if (currentUser.address) document.getElementById("shipping-address").value = currentUser.address;
 
             await loadProducts();
             await loadCart();
             await loadOrders();
         }
 
-        // ================= STORE LOGIC =================
         async function loadProducts() {
             try {
-                const response = await App.callApi("/products?size=50&status=ACTIVE"); 
-                const items = response.content || response; 
-                
+                const res = await App.callApi("/products?size=50&status=ACTIVE");
+                const items = res.items || [];
+
                 const container = document.getElementById("product-list");
                 if (!items || items.length === 0) {
                     container.innerHTML = "<p class='text-muted'>Chưa có sản phẩm nào.</p>";
                     return;
                 }
-
                 container.innerHTML = items.map(p => `
                     <div class="product-card">
-                        <img src="${p.imageUrl || 'https://via.placeholder.com/150?text=No+Image'}" alt="${p.name}">
-                        <div style="font-weight: 600; margin-bottom: 5px;">${p.name}</div>
-                        <div class="text-danger" style="font-weight: bold; margin-bottom: 10px;">${p.price.toLocaleString('vi-VN')} đ</div>
+                        <img src="${p.imageUrl || 'https://via.placeholder.com/150'}" alt="${p.name}">
+                        <div style="font-weight: 600; min-height: 40px; display: flex; align-items: center; justify-content: center;">${p.name}</div>
+                        <div class="text-danger" style="font-weight: bold;">${(p.price || 0).toLocaleString('vi-VN')} đ</div>
                         <button class="btn btn-outline btn-sm" onclick="addToCart(${p.id})">Thêm vào giỏ</button>
                     </div>
                 `).join("");
-            } catch (error) { console.error("Lỗi tải sản phẩm:", error); }
+            } catch (e) {
+                console.error("Lỗi tải sản phẩm:", e);
+                document.getElementById("product-list").innerHTML = "<p class='text-danger text-center'>Lỗi tải sản phẩm.</p>";
+            }
         }
 
-        // ================= CART LOGIC =================
         async function loadCart() {
             try {
                 const cart = await App.callApi("/cart");
@@ -250,91 +217,72 @@
                 const totalEl = document.getElementById("cart-total");
 
                 if (!cart || !cart.items || cart.items.length === 0) {
-                    container.innerHTML = "<p class='text-muted text-center'>Giỏ hàng trống.</p>";
+                    container.innerHTML = "<p class='text-muted text-center'>Trống.</p>";
                     totalEl.textContent = "Tổng: 0 đ";
                     return;
                 }
-
                 container.innerHTML = cart.items.map(item => `
                     <div class="cart-item">
                         <div>
-                            <div><strong>${item.productName}</strong></div>
-                            <div class="text-muted" style="font-size: 0.85rem;">${item.price.toLocaleString('vi-VN')} đ x ${item.quantity}</div>
+                            <div><strong>${item.productName || 'Sản phẩm'}</strong></div>
+                            <div class="text-muted" style="font-size: 0.8rem;">${(item.price || 0).toLocaleString('vi-VN')} x ${item.quantity}</div>
                         </div>
-                        <button class="btn btn-danger btn-sm" style="padding: 4px 8px;" onclick="removeFromCart(${item.id})">&times;</button>
+                        <button class="btn btn-danger btn-sm" onclick="removeFromCart(${item.id})">&times;</button>
                     </div>
                 `).join("");
-
-                totalEl.textContent = `Tổng: ${cart.totalPrice.toLocaleString('vi-VN')} đ`;
-            } catch (error) { console.error("Lỗi tải giỏ hàng:", error); }
+                totalEl.textContent = `Tổng: ${(cart.totalPrice || 0).toLocaleString('vi-VN')} đ`;
+            } catch (e) {
+                console.error("Lỗi tải giỏ hàng:", e);
+                document.getElementById("cart-items").innerHTML = "<p class='text-danger'>Không thể tải giỏ hàng.</p>";
+            }
         }
 
-        window.addToCart = async (productId) => {
-            try {
-                await App.callApi("/cart/items", {
-                    method: "POST",
-                    body: JSON.stringify({ productId: productId, quantity: 1 })
-                });
-                alert("Đã thêm vào giỏ!");
-                loadCart();
-            } catch (error) { alert(error.message); }
+        window.addToCart = async (id) => {
+            try { await App.callApi("/cart/items", { method: "POST", body: JSON.stringify({ productId: id, quantity: 1 }) }); alert("Đã thêm!"); loadCart(); } catch (e) { alert(e.message); }
         };
 
-        window.removeFromCart = async (cartItemId) => {
-            try {
-                await App.callApi(`/cart/items/${cartItemId}`, { method: "DELETE" });
-                loadCart();
-            } catch (error) { alert(error.message); }
+        window.removeFromCart = async (id) => {
+            try { await App.callApi(`/cart/items/${id}`, { method: "DELETE" }); loadCart(); } catch (e) { alert(e.message); }
         };
 
         document.getElementById("btn-checkout").addEventListener("click", async () => {
-            const address = document.getElementById("shipping-address").value.trim();
-            if (!address) return alert("Vui lòng nhập địa chỉ giao hàng!");
-
-            try {
-                await App.callApi("/orders", {
-                    method: "POST",
-                    body: JSON.stringify({ shippingAddress: address })
-                });
-                alert("Đặt hàng thành công!");
-                loadCart();
-                loadOrders();
-            } catch (error) { alert(error.message); }
+            const addr = document.getElementById("shipping-address").value.trim();
+            if (!addr) return alert("Nhập địa chỉ!");
+            try { await App.callApi("/orders", { method: "POST", body: JSON.stringify({ shippingAddress: addr }) }); alert("Thành công!"); loadCart(); loadOrders(); } catch (e) { alert(e.message); }
         });
 
-        // ================= ORDER LOGIC =================
         async function loadOrders() {
             try {
                 const orders = await App.callApi("/orders");
                 const container = document.getElementById("order-list");
-
                 if (!orders || orders.length === 0) {
-                    container.innerHTML = "<p class='text-muted'>Bạn chưa có đơn hàng nào.</p>";
+                    container.innerHTML = "<p class='text-muted'>Chưa có đơn hàng nào.</p>";
                     return;
                 }
-
                 container.innerHTML = orders.map(o => `
                     <div class="order-card">
-                        <div class="flex-between mb-2">
-                            <strong>Đơn hàng #${o.id}</strong>
-                            <span class="badge ${o.status === 'PENDING' ? 'badge-primary' : (o.status === 'CANCELLED' ? 'badge-danger' : 'badge-success')}" style="background-color: ${o.status === 'CANCELLED' ? 'var(--danger-color)' : ''}">${o.status}</span>
+                        <div class="flex-between">
+                            <strong>Đơn hàng #${o.id}</strong> 
+                            <span class="badge ${o.status === 'PENDING' ? 'badge-primary' : (o.status === 'CANCELLED' ? 'badge-danger' : 'badge-success')}">${o.status}</span>
                         </div>
-                        <div class="text-muted" style="font-size: 0.9rem; margin-bottom: 5px;">Địa chỉ: ${o.shippingAddress}</div>
-                        <div class="text-danger" style="font-weight: bold; margin-bottom: 10px;">Tổng tiền: ${o.totalAmount.toLocaleString('vi-VN')} đ</div>
-                        ${o.status === 'PENDING' ? `<button class="btn btn-outline btn-sm text-danger" style="border-color: var(--danger-color);" onclick="cancelOrder(${o.id})">Hủy đơn hàng</button>` : ''}
+                        <div class="text-danger" style="font-weight: bold; margin-top: 5px;">Tổng: ${(o.totalPrice || 0).toLocaleString('vi-VN')} đ</div>
+                        <div class="text-muted" style="font-size: 0.85rem;">Địa chỉ: ${o.shippingAddress || '—'}</div>
                     </div>
                 `).join("");
-            } catch (error) { console.error("Lỗi tải đơn hàng:", error); }
+            } catch (e) {
+                console.error("Lỗi tải đơn hàng:", e);
+                document.getElementById("order-list").innerHTML = "<p class='text-danger text-center'>Lỗi tải đơn hàng.</p>";
+            }
         }
 
-        window.cancelOrder = async (orderId) => {
-            if(!confirm("Bạn có chắc muốn hủy đơn hàng này?")) return;
+        document.getElementById("enforce-profile-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
             try {
-                await App.callApi(`/orders/${orderId}/cancel`, { method: "PUT" });
-                alert("Đã hủy đơn hàng!");
-                loadOrders();
-            } catch (error) { alert(error.message); }
-        };
+                currentUser = await App.callApi("/auth/profile", { method: "PUT", body: JSON.stringify({ name: document.getElementById("enforce-name").value, phoneNumber: document.getElementById("enforce-phone").value, address: document.getElementById("enforce-address").value }) });
+                alert("Thành công!");
+                checkProfileCompletion();
+            } catch (e) { alert(e.message); }
+        });
 
         initUser();
     });
