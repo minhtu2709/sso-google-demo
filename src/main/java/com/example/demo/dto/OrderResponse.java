@@ -17,6 +17,7 @@ public class OrderResponse {
     private BigDecimal totalPrice;
     private String shippingAddress;
     private List<OrderItemResponse> items;
+    private String customerName;
     private LocalDateTime createdAt;
 
     public static OrderResponse from(Order order) {
@@ -30,6 +31,7 @@ public class OrderResponse {
                 .totalPrice(order.getTotalPrice())
                 .shippingAddress(order.getShippingAddress())
                 .items(itemResponses)
+                .customerName(order.getUser().getName() != null ? order.getUser().getName() : order.getUser().getEmail())
                 .createdAt(order.getCreatedAt())
                 .build();
     }
