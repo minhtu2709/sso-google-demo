@@ -67,11 +67,7 @@ public class ProductService {
             String sortBy,
             String sortDir
     ) {
-        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir)
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
         Specification<Product> specification = buildProductSpecification(
                 keyword, categoryId, minPrice, maxPrice, status
         );

@@ -73,7 +73,12 @@ const App = {
     },
 
     // Xử lý đăng xuất chung
-    logout() {
+    logout(askConfirm = false) {
+        if (askConfirm) {
+            if (!confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
+                return;
+            }
+        }
         this.clearAuth();
         window.location.href = "/login.html";
     },
@@ -120,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     logoutBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
-            App.logout();
+            App.logout(true);
         });
     });
 });

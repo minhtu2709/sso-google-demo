@@ -629,28 +629,56 @@
                     <td>${new Date(o.createdAt).toLocaleDateString()}</td>
                     <td><span class="badge ${o.status==='DONE'?'badge-success':'badge-primary'}">${o.status}</span></td>
                     <td>
-                        <select onchange="updateOrderStatus(${o.id}, this.value, this)" class="form-control btn-sm" style="width: auto; display: inline-block;">
-                            <option value="PENDING" ${o.status==='PENDING'?'selected':''}>PENDING</option>
-                            <option value="CONFIRMED" ${o.status==='CONFIRMED'?'selected':''}>CONFIRMED</option>
-                            <option value="SHIPPING" ${o.status==='SHIPPING'?'selected':''}>SHIPPING</option>
-                            <option value="DONE" ${o.status==='DONE'?'selected':''}>DONE</option>
-                            <option value="CANCELLED" ${o.status==='CANCELLED'?'selected':''}>CANCEL</option>
+                        <select onchange="updateOrderStatus(${o.id}, this.value, this)" 
+                                data-prev="${o.status}"
+                                ${o.status === 'CANCELLED' || o.status === 'DONE' ? 'disabled' : ''}
+                                class="form-control btn-sm" style="width: auto; display: inline-block;">
+                            ${renderStatusOptions(o.status)}
                         </select>
                     </td>
                 </tr>
             `).join("");
         }
 
-        window.updateOrderStatus = async (id, status, selectEl) => {
-            if (!confirm(`Xác nhận chuyển sang "${status}"?`)) {
-                loadOrders();
+        function renderStatusOptions(currentStatus) {
+            const allStatuses = ['PENDING', 'CONFIRMED', 'SHIPPING', 'DONE', 'CANCELLED'];
+            return allStatuses.map(status => {
+                const isDisabled = 
+                    (currentStatus === 'CANCELLED' && status !== 'CANCELLED') ||
+                    (currentStatus === 'DONE' && status !== 'DONE');
+
+                return `<option value="${status}" 
+                            ${status === currentStatus ? 'selected' : ''}
+                            ${isDisabled ? 'disabled' : ''}>
+                            ${status}
+                        </option>`;
+            }).join('');
+        }
+
+        window.updateOrderStatus = async (id, newStatus, selectEl) => {
+            const prevStatus = selectEl.dataset.prev;
+
+            // Chặn chuyển từ CANCELLED sang bất kỳ status nào
+            if (prevStatus === 'CANCELLED') {
+                alert('Đơn hàng đã hủy, không thể thay đổi trạng thái!');
+                selectEl.value = 'CANCELLED';
                 return;
             }
+
+            if (!confirm(`Xác nhận chuyển sang "${newStatus}"?`)) {
+                selectEl.value = prevStatus;
+                return;
+            }
+
             try {
-                await App.callApi(`/admin/orders/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) });
-                UI.toast("Đã cập nhật trạng thái");
-                loadOrders();
-            } catch (error) { UI.toast(error.message, 'error'); loadOrders(); }
+                await App.callApi(`/admin/orders/${id}/status`, { method: "PUT", body: JSON.stringify({ status: newStatus }) });
+                selectEl.dataset.prev = newStatus;
+                UI.toast(`Cập nhật thành công → ${newStatus}`);
+                loadOrders(); // Tải lại để cập nhật Badge và disable nếu cần
+            } catch (error) { 
+                UI.toast(error.message, 'error'); 
+                selectEl.value = prevStatus;
+            }
         };
 
         // --- Users ---
