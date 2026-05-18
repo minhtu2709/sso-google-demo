@@ -247,7 +247,6 @@
                                style="width:80px; padding:10px; border:1px solid var(--border-color); border-radius:8px">
                         <button onclick="addToCartFromDetail()" class="btn btn-primary" style="flex: 1;">Thêm vào giỏ</button>
                     </div>
-                    <button onclick="buyNow()" class="btn btn-success" style="width: 100%; margin-top: 10px;">Mua ngay ⚡</button>
                 </div>
             </div>
         </div>
@@ -403,17 +402,16 @@
         }
 
         async function setupDashboard() {
+            // Cập nhật thông tin người dùng lên giao diện
             document.getElementById("user-name").textContent = "Xin chào, " + (currentUser.name || "Người dùng");
-            
+
             // HIỆN DASHBOARD
             document.getElementById("status").style.display = "none";
             document.getElementById("main-content").classList.remove("hidden");
-            
-            // Cập nhật thông tin địa chỉ nếu có (vào phần ghi chú)
-            if (currentUser.address) {
-                const noteEl = document.getElementById("addr-note");
-                if (noteEl) noteEl.value = currentUser.address;
-            }
+
+            // Không tự động điền địa chỉ Profile vào ô Ghi chú để tránh bị lặp lại địa chỉ (số nhà, phường, quận...)
+            const noteEl = document.getElementById("addr-note");
+            if (noteEl) noteEl.value = "";
 
             await loadProducts();
             await loadCart();
@@ -547,14 +545,9 @@
                 document.getElementById('detail-qty').disabled = product.stock <= 0;
 
                 const btnAdd = document.querySelector('button[onclick="addToCartFromDetail()"]');
-                const btnBuy = document.querySelector('button[onclick="buyNow()"]');
                 if (btnAdd) {
                     btnAdd.disabled = product.stock <= 0;
                     btnAdd.style.opacity = product.stock <= 0 ? "0.5" : "1";
-                }
-                if (btnBuy) {
-                    btnBuy.disabled = product.stock <= 0;
-                    btnBuy.style.opacity = product.stock <= 0 ? "0.5" : "1";
                 }
 
                 // Render reviews
@@ -603,21 +596,41 @@
                 });
                 alert('Đánh giá thành công!');
                 document.getElementById('review-comment').value = "";
-                openProductDetail(currentProductId); 
+                openProductDetail(currentProductId);
             } catch (e) { alert(e.message); }
         };
 
-        window.buyNow = async () => {
-            const qty = parseInt(document.getElementById('detail-qty').value) || 1;
-            try {
-                await App.callApi('/cart/items', {
-                    method: 'POST',
-                    body: JSON.stringify({ productId: currentProductId, quantity: qty })
-                });
-                await loadCart();
-                document.getElementById('payment-address').value = document.getElementById('shipping-address').value;
-                document.getElementById('payment-overlay').style.display = 'flex';
-            } catch (e) { alert(e.message); }
+        // Hàm hỗ trợ lấy địa chỉ đầy đủ từ các lựa chọn trong tab Giỏ hàng
+        function getShippingAddressFromCart() {
+            const cityEl = document.getElementById('addr-city');
+            const distEl = document.getElementById('addr-district');
+            const wardEl = document.getElementById('addr-ward');
+            const note = document.getElementById('addr-note').value.trim();
+
+            const cityName = cityEl.options[cityEl.selectedIndex]?.getAttribute('data-name');
+            const distName = distEl.options[distEl.selectedIndex]?.getAttribute('data-name');
+            const wardName = wardEl.options[wardEl.selectedIndex]?.getAttribute('data-name');
+
+            if (cityName && distName && wardName && note) {
+                return `${note}, ${wardName}, ${distName}, ${cityName}`;
+            }
+            return null;
+        }
+
+        window.openPayment = () => {
+            const fullAddr = getShippingAddressFromCart();
+
+            if (!fullAddr) {
+                return alert("Vui lòng chọn đầy đủ Tỉnh, Quận, Phường và nhập địa chỉ cụ thể kèm ghi chú!");
+            }
+
+            const note = document.getElementById('addr-note').value.trim();
+            if (note.length < 5) {
+                return alert("Phần địa chỉ cụ thể quá ngắn, vui lòng ghi rõ số nhà, tên đường!");
+            }
+
+            document.getElementById('payment-address').value = fullAddr;
+            document.getElementById('payment-overlay').style.display = 'flex';
         };
 
         window.closePayment = () => {
@@ -628,7 +641,7 @@
             const address = document.getElementById('payment-address').value.trim();
             const methodEl = document.querySelector('input[name="payment"]:checked');
             const method = methodEl ? methodEl.value : "COD";
-            
+
             if (!address) { alert('Vui lòng nhập địa chỉ giao hàng'); return; }
 
             try {
@@ -650,12 +663,25 @@
                 const cart = await App.callApi("/cart");
                 const container = document.getElementById("cart-items");
                 const totalEl = document.getElementById("cart-total");
+                const btnCheckout = document.getElementById("btn-checkout");
 
                 if (!cart || !cart.items || cart.items.length === 0) {
                     container.innerHTML = "<p class='text-muted text-center' style='padding: 20px;'>Giỏ hàng đang trống.</p>";
                     totalEl.textContent = "Tổng: 0 đ";
                     document.getElementById('cart-badge').textContent = '';
+                    if (btnCheckout) {
+                        btnCheckout.disabled = true;
+                        btnCheckout.style.opacity = "0.5";
+                        btnCheckout.style.cursor = "not-allowed";
+                    }
                     return;
+                }
+
+                // Bật nút thanh toán
+                if (btnCheckout) {
+                    btnCheckout.disabled = false;
+                    btnCheckout.style.opacity = "1";
+                    btnCheckout.style.cursor = "pointer";
                 }
 
                 // Cập nhật Badge
@@ -668,10 +694,10 @@
                 container.innerHTML = cart.items.map(item => `
                     <div class="cart-item" style="display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid var(--border-color)">
                         <!-- Ảnh sản phẩm -->
-                        <img src="${item.imageUrl || 'https://via.placeholder.com/60'}" 
+                        <img src="${item.imageUrl || 'https://via.placeholder.com/60'}"
                              alt="${item.productName}"
                              style="width:60px; height:60px; object-fit:cover; border-radius:8px; flex-shrink:0; background:#f8f9fa;">
-                        
+
                         <!-- Thông tin -->
                         <div style="flex:1">
                             <div style="font-weight:600; color:#333;">${item.productName || 'Sản phẩm'}</div>
@@ -684,7 +710,7 @@
                         </div>
 
                         <!-- Nút xóa -->
-                        <button class="btn btn-danger btn-sm" onclick="removeFromCart(${item.id})" 
+                        <button class="btn btn-danger btn-sm" onclick="removeFromCart(${item.id})"
                                 style="width:auto; padding:5px 10px; font-size:1.1rem;">
                             &times;
                         </button>
@@ -698,10 +724,10 @@
         }
 
         window.addToCart = async (id) => {
-            try { 
-                await App.callApi("/cart/items", { method: "POST", body: JSON.stringify({ productId: id, quantity: 1 }) }); 
-                alert("Đã thêm!"); 
-                switchTab('cart'); 
+            try {
+                await App.callApi("/cart/items", { method: "POST", body: JSON.stringify({ productId: id, quantity: 1 }) });
+                alert("Đã thêm!");
+                switchTab('cart');
             } catch (e) { alert(e.message); }
         };
 
@@ -727,10 +753,10 @@
             const cityCode = document.getElementById('addr-city').value;
             const distSelect = document.getElementById('addr-district');
             const wardSelect = document.getElementById('addr-ward');
-            
+
             distSelect.innerHTML = '<option value="">Đang tải...</option>';
             wardSelect.innerHTML = '<option value="">-- Phường/Xã --</option>';
-            
+
             if (!cityCode) {
                 distSelect.innerHTML = '<option value="">-- Quận/Huyện --</option>';
                 return;
@@ -748,9 +774,9 @@
         window.onDistrictChange = async () => {
             const distCode = document.getElementById('addr-district').value;
             const wardSelect = document.getElementById('addr-ward');
-            
+
             wardSelect.innerHTML = '<option value="">Đang tải...</option>';
-            
+
             if (!distCode) {
                 wardSelect.innerHTML = '<option value="">-- Phường/Xã --</option>';
                 return;
@@ -763,29 +789,6 @@
                     wardSelect.innerHTML += `<option value="${w.code}" data-name="${w.name}">${w.name}</option>`;
                 });
             } catch (e) { wardSelect.innerHTML = '<option value="">Lỗi tải dữ liệu</option>'; }
-        };
-
-        window.openPayment = () => {
-            const cityEl = document.getElementById('addr-city');
-            const distEl = document.getElementById('addr-district');
-            const wardEl = document.getElementById('addr-ward');
-            const note = document.getElementById('addr-note').value.trim();
-            
-            const cityName = cityEl.options[cityEl.selectedIndex]?.getAttribute('data-name');
-            const distName = distEl.options[distEl.selectedIndex]?.getAttribute('data-name');
-            const wardName = wardEl.options[wardEl.selectedIndex]?.getAttribute('data-name');
-            
-            if (!cityName || !distName || !wardName || !note) {
-                return alert("Vui lòng chọn đầy đủ Tỉnh, Quận, Phường và nhập địa chỉ cụ thể kèm ghi chú!");
-            }
-            
-            if (note.length < 5) {
-                return alert("Phần địa chỉ cụ thể quá ngắn, vui lòng ghi rõ số nhà, tên đường!");
-            }
-
-            const fullAddr = `${note}, ${wardName}, ${distName}, ${cityName}`;
-            document.getElementById('payment-address').value = fullAddr;
-            document.getElementById('payment-overlay').style.display = 'flex';
         };
 
         let cancelOrderId = null;
