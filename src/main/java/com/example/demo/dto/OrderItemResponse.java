@@ -13,6 +13,7 @@ public class OrderItemResponse {
     private Long id;
     private Long productId;
     private String productName;
+    private String productImageUrl;
     private Integer quantity;
 
     // Giá tại thời điểm mua — không phải giá hiện tại
@@ -26,6 +27,7 @@ public class OrderItemResponse {
                 .id(item.getId())
                 .productId(item.getProduct().getId())
                 .productName(item.getProduct().getName())
+                .productImageUrl(item.getProduct().getImageUrl())
                 .quantity(item.getQuantity())
                 .priceAtTime(item.getPriceAtTime())
                 .subtotal(item.getPriceAtTime()

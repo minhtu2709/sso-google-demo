@@ -2,9 +2,13 @@ package com.example.demo.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "cart_items")
+@Table(name = "cart_items", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"cart_id", "product_id"})
+})
 @Data
 public class CartItem {
 
@@ -24,4 +28,8 @@ public class CartItem {
 
     // Số lượng sản phẩm trong giỏ
     private Integer quantity;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 }

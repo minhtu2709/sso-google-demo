@@ -67,7 +67,10 @@ public class ProductService {
             String sortBy,
             String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+        Sort.Direction dir = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        String field = List.of("name", "price", "createdAt").contains(sortBy) ? sortBy : "id";
+        Pageable pageable = PageRequest.of(page, size, Sort.by(dir, field));
+
         Specification<Product> specification = buildProductSpecification(
                 keyword, categoryId, minPrice, maxPrice, status
         );
@@ -173,10 +176,12 @@ public class ProductService {
             }
 
             if (status != null && !status.isBlank()) {
-                predicates.add(criteriaBuilder.equal(
-                        criteriaBuilder.lower(root.get("status")),
-                        status.trim().toLowerCase()
-                ));
+                try {
+                    Product.ProductStatus productStatus = Product.ProductStatus.valueOf(status.trim().toUpperCase());
+                    predicates.add(criteriaBuilder.equal(root.get("status"), productStatus));
+                } catch (IllegalArgumentException e) {
+                    log.warn("Trạng thái không hợp lệ: {}", status);
+                }
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

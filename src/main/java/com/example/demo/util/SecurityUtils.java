@@ -13,11 +13,19 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SecurityUtils {
 
-    private final UserService userService;
+    private final com.example.demo.repository.UserRepository userRepository;
+
+    public com.example.demo.entity.User getCurrentUser() {
+        String email = extractEmail(null);
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Chưa đăng nhập hoặc không tìm thấy user"));
+    }
 
     public Long getCurrentUserId(Object principal) {
         String email = extractEmail(principal);
-        return userService.getUserByEmail(email).getId();
+        return userRepository.findByEmail(email)
+                .map(com.example.demo.entity.User::getId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
     }
 
     public String extractEmail(Object principal) {

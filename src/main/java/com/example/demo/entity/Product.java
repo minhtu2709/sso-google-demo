@@ -32,7 +32,9 @@ public class Product {
     @Column(length = 1000)
     private String imageUrl;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProductStatus status = ProductStatus.ACTIVE;
 
     private boolean deleted = false;
 
@@ -46,4 +48,13 @@ public class Product {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @Version
+    private Long version;
+
+    public enum ProductStatus {
+        ACTIVE,
+        INACTIVE,
+        OUT_OF_STOCK
+    }
 }

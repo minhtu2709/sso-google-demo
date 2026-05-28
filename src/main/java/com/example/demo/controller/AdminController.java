@@ -21,6 +21,12 @@ public class AdminController {
 
     private final UserService userService;
     private final OrderService orderService;
+    private final com.example.demo.service.StatsService statsService;
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<com.example.demo.dto.DashboardStatsResponse>> getDashboardStats() {
+        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê thành công", statsService.getDashboardStats()));
+    }
 
     @GetMapping("/users")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
@@ -38,7 +44,9 @@ public class AdminController {
     public ResponseEntity<ApiResponse<OrderResponse>> updateOrderStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> request) {
-        OrderResponse response = orderService.updateStatus(id, request.get("status"));
+        String status = request.get("status");
+        String reason = request.get("reason");
+        OrderResponse response = orderService.updateStatus(id, status, reason);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái đơn hàng thành công", response));
     }
 

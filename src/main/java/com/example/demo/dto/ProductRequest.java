@@ -1,5 +1,6 @@
 package com.example.demo.dto;
 
+import com.example.demo.entity.Product;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -26,7 +27,8 @@ public class ProductRequest {
 
     private String imageUrl;
 
-    private String status;
+    @NotNull(message = "Trạng thái không được để trống")
+    private Product.ProductStatus status;
 
     @NotNull(message = "Category ID không được để trống")
     private Long categoryId;

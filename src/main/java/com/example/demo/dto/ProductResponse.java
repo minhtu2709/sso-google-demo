@@ -17,7 +17,7 @@ public class ProductResponse {
     private BigDecimal price;
     private Integer stock;
     private String imageUrl;
-    private String status;
+    private Product.ProductStatus status;
     private CategoryResponse category;
     private Double averageRating;
     private Long reviewCount;

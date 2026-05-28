@@ -64,7 +64,7 @@
                     throw new Error(result.message || "Đăng nhập thất bại");
                 }
 
-                App.setToken(result.data.token);
+                App.setToken(result.data.token, result.data.refreshToken);
                 localStorage.setItem("user", JSON.stringify(result.data.user));
 
                 App.showStatus("status", "Đăng nhập thành công! Đang chuyển hướng...", true);

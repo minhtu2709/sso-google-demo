@@ -48,6 +48,17 @@ public class CartController {
         return ResponseEntity.ok(ApiResponse.success("Đã xóa sản phẩm khỏi giỏ", response));
     }
 
+    @PutMapping("/items/{cartItemId}")
+    public ResponseEntity<ApiResponse<CartResponse>> updateQuantity(
+            @AuthenticationPrincipal Object principal,
+            @PathVariable Long cartItemId,
+            @RequestParam int quantity) {
+
+        Long userId = securityUtils.getCurrentUserId(principal);
+        CartResponse response = cartService.updateItemQuantity(userId, cartItemId, quantity);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật số lượng thành công", response));
+    }
+
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> clearCart(
             @AuthenticationPrincipal Object principal) {

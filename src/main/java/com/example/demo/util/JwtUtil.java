@@ -13,11 +13,23 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    @Value("${app.jwt.secret}")
-    private String secret;
+    private final String secret;
+    private final long accessTokenExpirationMs;
+    private final long refreshTokenExpirationMs = 604800000; // 7 ngày
 
-    @Value("${app.jwt.expiration-ms}")
-    private long expirationMs;
+    public JwtUtil(
+            @Value("${app.jwt.secret:#{null}}") String secret,
+            @Value("${app.jwt.expiration-ms}") long expirationMs
+    ) {
+        if (secret == null || secret.isBlank() || secret.equals("supersecretkey12345678901234567890")) {
+            throw new IllegalStateException(
+                "CRITICAL SECURITY ERROR: JWT_SECRET environment variable is not set or using insecure default! " +
+                "Please set a strong, unique secret key in your environment variables."
+            );
+        }
+        this.secret = secret;
+        this.accessTokenExpirationMs = 3600000; // 1 giờ cho Access Token thực tế
+    }
 
     // Tạo token từ email và role của user
     public String generateToken(String email, String role) {
@@ -25,7 +37,7 @@ public class JwtUtil {
                 .subject(email)           // email là "chủ sở hữu" token
                 .claim("role", role)      // nhét role vào trong token
                 .issuedAt(new Date())     // thời điểm tạo
-                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .expiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
                 .signWith(getSigningKey()) // ký bằng secret key
                 .compact();
     }

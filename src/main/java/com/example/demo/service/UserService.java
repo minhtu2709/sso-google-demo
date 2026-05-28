@@ -10,6 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +42,8 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setProvider("LOCAL");
         user.setRole(User.Role.USER);
+        user.setEnabled(true);
+        user.setBlacklisted(false);
 
         // Default Avatar based on email
         String safeEmail = request.getEmail().split("@")[0];
@@ -74,15 +83,59 @@ public class UserService {
 
     @Transactional
     public UserResponse updateProfile(String email, com.example.demo.dto.ProfileUpdateRequest request) {
+        log.info("Đang cập nhật profile cho {}. SĐT mới: {}", email, request.getPhoneNumber());
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
+
+        if (userRepository.existsByPhoneNumberAndIdNot(request.getPhoneNumber(), user.getId())) {
+            log.warn("Cập nhật thất bại: SĐT {} đã tồn tại ở user khác", request.getPhoneNumber());
+            throw new IllegalArgumentException("Số điện thoại đã được sử dụng bởi tài khoản khác");
+        }
 
         user.setName(request.getName());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setAddress(request.getAddress());
+        if (request.getAvatarUrl() != null && !request.getAvatarUrl().isBlank()) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
 
         User saved = userRepository.save(user);
         return UserResponse.from(saved);
+    }
+
+    @Transactional
+    public String updateAvatar(String email, MultipartFile file) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File không được để trống");
+        }
+
+        try {
+            // Tạo thư mục uploads nếu chưa có
+            Path uploadPath = Paths.get("./uploads");
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // Tạo tên file duy nhất
+            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            Path filePath = uploadPath.resolve(fileName);
+
+            // Lưu file
+            Files.copy(file.getInputStream(), filePath);
+
+            // Cập nhật avatarUrl của user (đường dẫn tương đối để WebConfig map)
+            String avatarUrl = "/uploads/" + fileName;
+            user.setAvatarUrl(avatarUrl);
+            userRepository.save(user);
+
+            return avatarUrl;
+        } catch (IOException e) {
+            log.error("Lỗi khi lưu file avatar: {}", e.getMessage());
+            throw new RuntimeException("Lỗi khi tải ảnh lên");
+        }
     }
 
     @Transactional
@@ -106,11 +159,21 @@ public class UserService {
 
     @Transactional
     public UserResponse adminUpdateUser(Long userId, com.example.demo.dto.ProfileUpdateRequest request) {
+        log.info("Admin đang cập nhật user ID {}. SĐT mới: {}", userId, request.getPhoneNumber());
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
+
+        if (userRepository.existsByPhoneNumberAndIdNot(request.getPhoneNumber(), user.getId())) {
+            log.warn("Admin cập nhật thất bại: SĐT {} đã tồn tại ở user khác", request.getPhoneNumber());
+            throw new IllegalArgumentException("Số điện thoại đã được sử dụng bởi tài khoản khác");
+        }
+
         user.setName(request.getName());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setAddress(request.getAddress());
+        if (request.getAvatarUrl() != null && !request.getAvatarUrl().isBlank()) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
         return UserResponse.from(userRepository.save(user));
     }
 

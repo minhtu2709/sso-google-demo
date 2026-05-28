@@ -65,17 +65,21 @@ public class SecurityConfig {
                                 "/change-password.html",
                                 "/user-dashboard.html",
                                 "/admin-dashboard.html",
+                                "/payment-mock.html",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
+                                "/uploads/**",
                                 "/auth/register",
                                 "/auth/login",
+                                "/auth/refresh",
                                 "/auth/login-form",
                                 "/login/**",
                                 "/oauth2/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/api/payment/**"
                         ).permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/products/**", "/categories/**").permitAll()

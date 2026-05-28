@@ -29,12 +29,24 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
+    private String paymentMethod; // COD, BANK_TRANSFER, VNPAY, MOMO
+    private String paymentStatus; // UNPAID, PAID, REFUNDED
+    private String cancelReason; // Lý do hủy đơn (nếu có)
+
     // Tổng tiền của đơn hàng — lưu lại tại thời điểm đặt
     // vì giá sản phẩm có thể thay đổi sau này
     @Column(nullable = false)
     private BigDecimal totalPrice;
 
-    // Địa chỉ giao hàng
+    // Snapshot địa chỉ giao hàng tại thời điểm đặt hàng
+    private String recipientName;
+    private String recipientPhone;
+    private String province;
+    private String district;
+    private String ward;
+    private String detailAddress;
+
+    // Địa chỉ giao hàng (Full string summary)
     private String shippingAddress;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trang Quản Trị - Commercial App</title>
     <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --sidebar-width: 250px;
@@ -139,13 +140,14 @@
         </ul>
         <div style="position: absolute; bottom: 20px; width: 100%; padding: 0 20px;">
             <hr style="border: 0.5px solid rgba(255,255,255,0.1); margin-bottom: 15px;">
-            <div id="sidebar-user-profile" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px; border-radius: 8px; transition: background 0.3s;" onclick="if(confirm('Bạn muốn đăng xuất?')) App.logout()" title="Đăng xuất">
+            <div id="sidebar-user-profile" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 5px; border-radius: 8px; transition: background 0.3s;" onclick="window.location.href='/profile.html'" title="Hồ sơ cá nhân">
                 <img id="sidebar-avatar" src="https://via.placeholder.com/35" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.2);">
                 <div style="overflow: hidden;">
                     <p id="sidebar-user-name" style="margin: 0; font-size: 0.85rem; font-weight: 500; white-space: nowrap; text-overflow: ellipsis;">Admin</p>
-                    <p style="margin: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5);">Đăng xuất</p>
+                    <p style="margin: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5);">Xem hồ sơ</p>
                 </div>
             </div>
+            <a href="javascript:void(0)" class="logout-btn" style="display: block; margin-top: 10px; color: rgba(255,255,255,0.6); font-size: 0.75rem; text-decoration: none;">🚪 Đăng xuất</a>
         </div>
     </nav>
 
@@ -164,10 +166,14 @@
             <div class="section-header">
                 <h2>Tổng quan hệ thống</h2>
             </div>
-            <div class="grid-cards" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="grid-cards" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 30px;">
                 <div class="stat-card">
                     <p class="text-muted">Tổng Sản Phẩm</p>
                     <h3 id="stat-products">0</h3>
+                </div>
+                <div class="stat-card">
+                    <p class="text-muted">Sắp hết hàng</p>
+                    <h3 id="stat-low-stock" class="text-danger">0</h3>
                 </div>
                 <div class="stat-card">
                     <p class="text-muted">Đơn hàng mới</p>
@@ -180,6 +186,41 @@
                 <div class="stat-card">
                     <p class="text-muted">Doanh thu</p>
                     <h3 id="stat-revenue">0đ</h3>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <div class="card">
+                    <h4 class="mb-4">📈 Doanh thu 30 ngày qua</h4>
+                    <div style="height: 300px;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4 class="mb-4">📦 Trạng thái đơn hàng</h4>
+                    <div style="height: 300px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Products Row -->
+            <div class="card">
+                <h4 class="mb-4">🏆 Top 5 Sản phẩm bán chạy</h4>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Số lượng đã bán</th>
+                                <th>Tổng doanh thu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-products-list">
+                            <!-- JS will render here -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>
@@ -248,8 +289,10 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Khách hàng</th>
+                                <th>Sản phẩm</th>
                                 <th>Tổng tiền</th>
                                 <th>Ngày đặt</th>
+                                <th>Thanh toán</th>
                                 <th>Trạng thái</th>
                                 <th>Thao tác</th>
                             </tr>
@@ -315,6 +358,7 @@
                     <select id="prod-status" class="form-control">
                         <option value="ACTIVE">ACTIVE</option>
                         <option value="INACTIVE">INACTIVE</option>
+                        <option value="OUT_OF_STOCK">OUT OF STOCK</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -403,7 +447,12 @@
     };
 
     document.addEventListener("DOMContentLoaded", () => {
+        // 1. Lưu Token từ URL nếu có (Dành cho Google Login)
         App.saveTokenFromHash();
+
+        // 2. Kiểm tra Token trước khi chạy bất kỳ logic nào
+        if (!App.checkAuth()) return;
+
         let categories = [], allUsers = [], allProducts = [], allOrders = [];
         let currentUser = null;
 
@@ -451,12 +500,124 @@
             updateStats();
         }
 
-        function updateStats() {
-            document.getElementById("stat-products").textContent = allProducts.length;
-            document.getElementById("stat-orders").textContent = allOrders.filter(o => o.status === 'PENDING').length;
-            document.getElementById("stat-users").textContent = allUsers.length;
-            const revenue = allOrders.filter(o => o.status === 'DONE').reduce((sum, o) => sum + (o.totalPrice || 0), 0);
-            document.getElementById("stat-revenue").textContent = revenue.toLocaleString() + 'đ';
+        let revenueChart = null;
+        let statusChart = null;
+
+        async function updateStats() {
+            try {
+                const stats = await App.callApi("/admin/stats");
+                
+                // 1. Cập nhật các con số
+                document.getElementById("stat-products").textContent = stats.totalProducts;
+                document.getElementById("stat-low-stock").textContent = stats.lowStockCount;
+                document.getElementById("stat-orders").textContent = stats.totalOrders;
+                document.getElementById("stat-users").textContent = stats.totalUsers;
+                document.getElementById("stat-revenue").textContent = stats.totalRevenue.toLocaleString() + 'đ';
+
+                // 2. Vẽ biểu đồ Doanh thu (Line Chart)
+                renderRevenueChart(stats.revenueHistory);
+
+                // 3. Vẽ biểu đồ Trạng thái (Doughnut Chart)
+                renderStatusChart(stats.ordersByStatus);
+
+                // 4. Render Top sản phẩm
+                renderTopProducts(stats.topProducts);
+
+            } catch (e) {
+                console.error("Lỗi khi tải thống kê:", e);
+            }
+        }
+
+        function renderRevenueChart(history) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            if (revenueChart) revenueChart.destroy();
+            
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: history.map(h => h.date),
+                    datasets: [{
+                        label: 'Doanh thu (đ)',
+                        data: history.map(h => h.revenue),
+                        borderColor: '#4361ee',
+                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function renderStatusChart(statusMap) {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            
+            if (statusChart) statusChart.destroy();
+            
+            const rawLabels = Object.keys(statusMap);
+            const data = Object.values(statusMap);
+            
+            const labelMap = {
+                'PENDING': 'Chờ xử lý',
+                'CONFIRMED': 'Đã xác nhận',
+                'SHIPPING': 'Đang giao',
+                'DONE': 'Hoàn thành',
+                'CANCELLED': 'Đã hủy'
+            };
+
+            const colors = {
+                'PENDING': '#4361ee',
+                'CONFIRMED': '#17a2b8',
+                'SHIPPING': '#ffc107',
+                'DONE': '#28a745',
+                'CANCELLED': '#dc3545'
+            };
+
+            statusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: rawLabels.map(l => labelMap[l] || l),
+                    datasets: [{
+                        data: data,
+                        backgroundColor: rawLabels.map(l => colors[l] || '#6c757d')
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        function renderTopProducts(products) {
+            const container = document.getElementById("top-products-list");
+            if (!products || products.length === 0) {
+                container.innerHTML = '<tr><td colspan="3" class="text-center">Chưa có dữ liệu bán hàng.</td></tr>';
+                return;
+            }
+
+            container.innerHTML = products.map(p => `
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${p.imageUrl || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px;">
+                            <span style="font-weight: 500;">${p.productName}</span>
+                        </div>
+                    </td>
+                    <td style="font-weight: bold;">${p.totalSold}</td>
+                    <td class="text-danger" style="font-weight: bold;">${(p.totalRevenue || 0).toLocaleString()}đ</td>
+                </tr>
+            `).join("");
         }
 
         // --- Categories ---
@@ -556,16 +717,26 @@
             try {
                 const res = await App.callApi("/products?size=100");
                 allProducts = res.items || [];
-                document.getElementById("product-list").innerHTML = allProducts.map(p => `
+                document.getElementById("product-list").innerHTML = allProducts.map(p => {
+                    const isLowStock = p.stock < 5;
+                    const stockDisplay = isLowStock 
+                        ? `<span class="text-danger" style="font-weight: bold;">⚠️ ${p.stock} (Sắp hết)</span>` 
+                        : p.stock;
+                    
+                    return `
                     <tr>
-                        <td>${p.id}</td><td>${p.name}</td><td>${p.category?.name || '—'}</td><td>${(p.price || 0).toLocaleString()}đ</td><td>${p.stock}</td>
+                        <td>${p.id}</td>
+                        <td style="font-weight: 500;">${p.name}</td>
+                        <td>${p.category?.name || '—'}</td>
+                        <td>${(p.price || 0).toLocaleString()}đ</td>
+                        <td>${stockDisplay}</td>
                         <td><span class="badge ${p.status==='ACTIVE'?'badge-success':'badge-primary'}">${p.status}</span></td>
                         <td style="text-align: right;">
                             <button class="btn btn-outline btn-sm" onclick="openProductModal(${p.id})" title="Sửa">✏️</button>
                             <button class="btn btn-outline btn-sm text-danger" onclick="deleteProduct(${p.id})" title="Xóa">🗑️</button>
                         </td>
                     </tr>
-                `).join("");
+                `}).join("");
             } catch (e) {}
         }
 
@@ -623,11 +794,61 @@
         }
 
         function renderOrders(orders) {
-            document.getElementById("admin-order-list").innerHTML = orders.map(o => `
+            document.getElementById("admin-order-list").innerHTML = orders.map(o => {
+                let payStatusHTML = '';
+                const methodLabel = o.paymentMethod || 'COD';
+                
+                if (o.paymentStatus === 'PAID' || o.status === 'DONE') {
+                    payStatusHTML = `<span class="text-success">✅ Đã TT (${methodLabel})</span>`;
+                } else if (o.status === 'CANCELLED') {
+                    payStatusHTML = `<span class="text-danger">❌ Đã hủy (${methodLabel})</span>`;
+                } else if (o.paymentMethod === 'COD') {
+                    payStatusHTML = '<span class="text-muted">🚚 COD (Trả sau)</span>';
+                } else {
+                    // Chờ thanh toán Online
+                    payStatusHTML = `<span class="text-primary">💳 Đang chờ ${methodLabel}</span>`;
+                }
+
+                const statusLabels = {
+                    'PENDING': { text: 'Chờ xử lý', class: 'badge-primary' },
+                    'CONFIRMED': { text: 'Đã xác nhận', class: 'badge-info' },
+                    'SHIPPING': { text: 'Đang giao', class: 'badge-warning' },
+                    'DONE': { text: 'Hoàn thành', class: 'badge-success' },
+                    'CANCELLED': { text: 'Đã hủy', class: 'badge-danger' }
+                };
+                const currentStatus = statusLabels[o.status] || { text: o.status, class: 'badge-secondary' };
+
+                // Render danh sách sản phẩm thu nhỏ cho Admin
+                const itemsHtml = (o.items || []).map(item => `
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 0.8rem; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px;">
+                        <img src="${item.productImageUrl || 'https://via.placeholder.com/30'}" 
+                             style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
+                        <div style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" title="${item.productName}">
+                            ${item.productName}
+                        </div>
+                        <div style="font-weight: bold;">x${item.quantity}</div>
+                    </div>
+                `).join("");
+
+                return `
                 <tr>
-                    <td>#${o.id}</td><td>${o.customerName || 'Khách'}</td><td>${(o.totalPrice || 0).toLocaleString()}đ</td>
+                    <td>#${o.id}</td>
+                    <td style="font-size: 0.85rem;">
+                        <strong>${o.customerName || 'Khách'}</strong><br>
+                        <small class="text-muted">${o.recipientPhone || ''}</small>
+                    </td>
+                    <td>
+                        <div style="max-height: 100px; overflow-y: auto; min-width: 200px;">
+                            ${itemsHtml}
+                        </div>
+                    </td>
+                    <td>${(o.totalPrice || 0).toLocaleString()}đ</td>
                     <td>${new Date(o.createdAt).toLocaleDateString()}</td>
-                    <td><span class="badge ${o.status==='DONE'?'badge-success':'badge-primary'}">${o.status}</span></td>
+                    <td style="font-weight: 500; font-size: 0.85rem;">${payStatusHTML}</td>
+                    <td>
+                        <span class="badge ${currentStatus.class}">${currentStatus.text}</span>
+                        ${o.status === 'CANCELLED' && o.cancelReason ? `<small class="text-danger" style="font-style: italic; margin-left: 5px;">(${o.cancelReason})</small>` : ''}
+                    </td>
                     <td>
                         <select onchange="updateOrderStatus(${o.id}, this.value, this)" 
                                 data-prev="${o.status}"
@@ -637,7 +858,7 @@
                         </select>
                     </td>
                 </tr>
-            `).join("");
+            `}).join("");
         }
 
         function renderStatusOptions(currentStatus) {
@@ -665,13 +886,25 @@
                 return;
             }
 
-            if (!confirm(`Xác nhận chuyển sang "${newStatus}"?`)) {
-                selectEl.value = prevStatus;
-                return;
+            let reason = null;
+            if (newStatus === 'CANCELLED') {
+                reason = prompt("Nhập lý do hủy đơn hàng (hoặc để trống):", "Sản phẩm hết hàng / Lỗi vận chuyển");
+                if (reason === null) { // User bấm Cancel prompt
+                    selectEl.value = prevStatus;
+                    return;
+                }
+            } else {
+                if (!confirm(`Xác nhận chuyển sang "${newStatus}"?`)) {
+                    selectEl.value = prevStatus;
+                    return;
+                }
             }
 
             try {
-                await App.callApi(`/admin/orders/${id}/status`, { method: "PUT", body: JSON.stringify({ status: newStatus }) });
+                await App.callApi(`/admin/orders/${id}/status`, { 
+                    method: "PUT", 
+                    body: JSON.stringify({ status: newStatus, reason: reason }) 
+                });
                 selectEl.dataset.prev = newStatus;
                 UI.toast(`Cập nhật thành công → ${newStatus}`);
                 loadOrders(); // Tải lại để cập nhật Badge và disable nếu cần

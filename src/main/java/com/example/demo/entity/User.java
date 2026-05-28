@@ -23,13 +23,25 @@ public class User {
 
     private String name;
 
+    @Column(unique = true)
     private String phoneNumber;
 
     private String address;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Address> addresses = new java.util.ArrayList<>();
+
     private String avatarUrl;
 
     private String provider;
+
+    // Trạng thái tài khoản
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean enabled = true;
+
+    // Đánh dấu phá hoại
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean blacklisted = false;
 
     // Thêm role — dùng Enum như Order.OrderStatus
     // Mặc định là USER khi đăng ký

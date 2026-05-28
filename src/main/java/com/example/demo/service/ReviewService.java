@@ -7,6 +7,7 @@ import com.example.demo.dto.ReviewResponse;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.Review;
 import com.example.demo.entity.User;
+import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.repository.ReviewRepository;
 import com.example.demo.repository.UserRepository;
@@ -29,6 +30,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
 
     @Transactional
     public ReviewResponse upsertReview(Long productId, Long userId, ReviewRequest request) {
@@ -37,6 +39,11 @@ public class ReviewService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
+
+        // Kiểm tra user đã mua hàng thành công chưa
+        if (!orderRepository.hasPurchasedProduct(userId, productId)) {
+            throw new IllegalArgumentException("Bạn chỉ có thể đánh giá sản phẩm sau khi đã mua hàng thành công");
+        }
 
         Review review = reviewRepository.findByProductIdAndUserId(productId, userId)
                 .orElseGet(Review::new);

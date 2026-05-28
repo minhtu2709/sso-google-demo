@@ -56,10 +56,12 @@ public class OrderController {
     @PutMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
             @AuthenticationPrincipal Object principal,
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> request) {
 
         Long userId = securityUtils.getCurrentUserId(principal);
-        OrderResponse response = orderService.cancelOrder(id, userId);
+        String reason = (request != null) ? request.get("reason") : "Người dùng yêu cầu hủy";
+        OrderResponse response = orderService.cancelOrder(id, userId, reason);
         return ResponseEntity.ok(ApiResponse.success("Hủy đơn hàng thành công", response));
     }
 }

@@ -1,7 +1,9 @@
 package com.example.demo.security;
 
 import com.example.demo.entity.User;
+import com.example.demo.entity.RefreshToken;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.service.RefreshTokenService;
 import com.example.demo.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,6 +20,7 @@ import java.io.IOException;
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
     private final JwtUtil jwtUtil;
 
     @Override
@@ -29,18 +32,56 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
+        String picture = oAuth2User.getAttribute("picture"); // Link ảnh từ Google
 
         User user = userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setName(name);
+            newUser.setAvatarUrl(picture);
             newUser.setProvider("GOOGLE");
-            newUser.setRole(User.Role.USER);
+            
+            // Tự động cấp quyền ADMIN nếu là người dùng đầu tiên hoặc email cụ thể
+            if (userRepository.count() == 0 || "admin@example.com".equals(email)) {
+                newUser.setRole(User.Role.ADMIN);
+            } else {
+                newUser.setRole(User.Role.USER);
+            }
+            
+            newUser.setEnabled(true);
+            newUser.setBlacklisted(false);
             return userRepository.save(newUser);
         });
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        // Nếu bạn muốn ép quyền ADMIN cho email của mình, hãy sửa dòng này:
+        if ("your-email@gmail.com".equals(email) && user.getRole() != User.Role.ADMIN) {
+             user.setRole(User.Role.ADMIN);
+             userRepository.save(user);
+        }
 
-        response.sendRedirect("/user-dashboard.html#token=" + token);
+        // Cập nhật thông tin từ Google nếu cần (Nếu user chưa có tên hoặc avatar)
+        boolean needsUpdate = false;
+        if ((user.getName() == null || user.getName().isEmpty()) && name != null) {
+            user.setName(name);
+            needsUpdate = true;
+        }
+        if (picture != null && (user.getAvatarUrl() == null || user.getAvatarUrl().startsWith("https://ui-avatars.com"))) {
+            user.setAvatarUrl(picture);
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+            userRepository.save(user);
+        }
+
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+
+        String targetUrl = "/user-dashboard.html";
+        if (user.getRole() == User.Role.ADMIN) {
+            targetUrl = "/admin-dashboard.html";
+        }
+
+        response.sendRedirect(targetUrl + "#token=" + token + "&refreshToken=" + refreshToken.getToken());
     }
 }
